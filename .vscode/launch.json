@@ -13,6 +13,16 @@
         "<node_internals>/**"
       ],
       "type": "node"
+    },
+    {
+      "name": "Test Launch",
+      "request": "launch",
+      "runtimeArgs": ["./examples_web/src"],
+      "runtimeExecutable": "D:/nwjs-sdk-v0.102.0-win-x64/nw",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
     }
   ]
 }
