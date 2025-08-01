@@ -1,4 +1,14 @@
 {
   "name": "node-haxball-client",
-  "main": "index.html"
+  "main": "main.html",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "node-haxball": "^2.2.0"
+  }
 }

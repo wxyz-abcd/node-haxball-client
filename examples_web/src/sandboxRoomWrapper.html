@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./vendor/json5.min.js"></script>
+    <script src="./vendor/pako-jszip.min.js"></script>
+    <!--script src="./vendor/api.js"></script-->
+    <script src="https://cdn.jsdelivr.net/gh/wxyz-abcd/node-haxball@latest/src/api.js"></script>
+    <!--script src="./vendor/sandboxWrapper.js"></script-->
+    <script src="https://cdn.jsdelivr.net/gh/wxyz-abcd/node-haxball@latest/src/sandboxWrapper.js"></script>
+    <script src="./addonImporter.js"></script>
+    <script src="./sandboxRoomWrapper.js"></script>
+    <link rel="stylesheet" href="./scrollbar.css" />
+    <link rel="stylesheet" href="./button.css" />
+    <link rel="stylesheet" href="./flags.css" />
+    <link rel="stylesheet" href="./contextmenu.css" />
+    <link rel="stylesheet" href="./room.css" />
+    <link rel="stylesheet" href="./canvas.css" />
+    <link rel="stylesheet" href="./game.css" />
+    <link rel="stylesheet" href="./sandboxRoomWrapper.css" />
+    <script src="./flagSelector.js"></script>
+    <link rel="stylesheet" href="./flagSelector.css" />
+  </head>
+  <body>
+      <button class="button sandbox-tools">☰</button>
+      <div class="toolbar1">
+        <div style="display:flex;flex-direction:row;align-items:center;padding-left:47px;">
+          <button class="button marginRight freeze">Freeze</button>
+          <label class="marginRight">Speed:</label>
+          <input type="number" value="1" min="0" max="20" step="0.1" class="marginRight speedInput">
+          <button class="button marginRight step" disabled>Step</button>
+          <button class="button marginRight stopGame" style="background-color: red;">■</button>
+          <button class="button marginRight pauseGame">❚ ❚</button>
+        </div>
+        <div style="display:flex;flex-direction:row;align-items:center;">
+          <button class="button marginRight fixedTb2ButtonHeight snapshotButton">
+            Snapshots...
+          </button>
+          <button class="button marginRight fixedTb2ButtonHeight addPlayerButton">
+            Add player
+          </button>
+        </div>
+      </div>
+      <div class="toolbar2"></div>
+    <div class="canvasContainer">
+      <iframe src="room.html" class="canvasSubContainer"></iframe>
+      <div class="canvasSubContainer">
+        <canvas id="canvas"></canvas>
+        <div class="gameStateContainer">
+          <div class="scoreBoard">
+            <div class="teamIcon red"></div>
+            <div class="score">0</div>
+            <div>-</div>
+            <div class="score">0</div>
+            <div class="teamIcon blue"></div>
+          </div>
+          <div class="gameTime">
+            <span class="overtime">OVERTIME!</span>
+            <span class="digit">0</span>
+            <span class="digit">0</span>
+            <span>:</span>
+            <span class="digit">0</span>
+            <span class="digit">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chatContainer">
+      <div class="chatBox">
+        <div class="chatLog"></div>
+        <div class="chatInput">
+          <input class="customInput" type="text" maxLength=140 />
+          <button class="button">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="multiple-input-popup" class="popup" style="display:none;"></div>
+    <script src="./sandboxRoomWrapper_init.js"></script>
+  </body>
+</html>
