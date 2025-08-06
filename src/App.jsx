@@ -6,7 +6,7 @@ function App() {
   const [roomJoined, setRoomJoined] = useState(null);
 
   if (roomJoined) {
-    return <Game roomId='a'/>;
+    return <Game roomId='a' />;
   }
 
   return <RoomList onJoin={setRoomJoined} />;

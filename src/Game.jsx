@@ -5,9 +5,13 @@ import grass from './assets/images/grass.png';
 import concrete from './assets/images/concrete.png';
 import concrete2 from './assets/images/concrete2.png';
 import typing from './assets/images/typing.png';
+/**
+ * @typedef {import('./types/index').API} API
+ */
 
 function Game({ roomId }) {
-    const { Room, Utils, ConnectionState } = window.API;
+    const API = window.API;
+    const { Room, Utils, ConnectionState, Callback } = API;
     const [joined, setJoined] = useState('Not joined');
     const [connState, setConnState] = useState('');
     const canvasRef = useRef(null);
@@ -17,12 +21,12 @@ function Game({ roomId }) {
                 console.error("Canvas reference is not set.");
                 return;
             };
-            const canvas = canvasRef.current;
-            const defaultRendererObj = new defaultRenderer(window.API, {canvas: canvas,paintGame: true,images: { grass, concrete, concrete2, typing }})
+            const canvas = canvasRef.current;            
+            const defaultRendererObj = new defaultRenderer(API, {canvas, paintGame: true, images: { grass, concrete, concrete2, typing }, onRequestAnimationFrame: ()=>{}})
             const authObj = await Utils.generateAuth();
 
             const jParams = {
-                id: 'PqpMb-NOBwI',
+                id: '-dRCnlPQEW0',
                 password: null,
                 token: null,
                 authObj: authObj[1],
@@ -69,7 +73,7 @@ function Game({ roomId }) {
             });
         }
         init();
-    }, [ConnectionState.Active, ConnectionState.AwaitingState, ConnectionState.ConnectingToMaster, ConnectionState.ConnectingToPeer, ConnectionState.ConnectionFailed, ConnectionState.TryingReverseConnection, Room, Utils]);
+    }, []);
 
     return (<>
         <canvas className="canvas" ref={canvasRef} id="canvas"></canvas>

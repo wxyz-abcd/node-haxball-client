@@ -7,11 +7,14 @@ const { Utils } = window.API;
 
 function RoomList({ onJoin }) {
   const [rooms, setRooms] = useState([]);
-  const [geo, setGeo] = useState({ lat: 0, lon: 0 });
   const [roomSelected, setRoomSelected] = useState(null);
   useEffect(() => {
-    Utils.getRoomList().then(setRooms).catch(console.error);
-    Utils.getGeo().then(setGeo).catch(console.error);
+    Utils.getGeo().then((geo) => {
+      Utils.getRoomList().then(((roomList) => {
+        Utils.calculateAllRoomDistances(geo, roomList);
+        setRooms([...roomList.sort((a, b) => a.dist - b.dist)]);
+      })).catch(console.error);
+    }).catch(console.error);
   }, []);
 
   const hasPassword = (room) => room.data.password ? "Yes" : "No";
@@ -35,14 +38,6 @@ function RoomList({ onJoin }) {
     const ps = new PerfectScrollbar(containerRef.current);
     return () => ps.destroy();
   }, []);
-
-  useEffect(() => {
-    if (rooms.length && geo.lat && geo.lon) {
-      Utils.calculateAllRoomDistances(geo, rooms);
-      setRooms([...rooms.sort((a, b) => a.dist - b.dist)]);
-    }
-  }, [geo, rooms, rooms.length]);
-  console.log(rooms)
 
   return (
     <div className='container flexRow'>
@@ -118,7 +113,7 @@ function RoomList({ onJoin }) {
                 </button>
                 <div className="spacer"></div>
                 <div className="file-btn">
-                  <label for="replayfile">
+                  <label htmlFor="replayfile">
                     <i className="icon-play"></i>
                     <div>Replays</div>
                   </label>
