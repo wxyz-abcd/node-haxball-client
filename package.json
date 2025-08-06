@@ -5,11 +5,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "nw": "npm run build && nw --unref ."
+    "dev": "concurrently \"cross-env vite\" \"cross-env nw . development\"",
+    "preview": "concurrently \"cross-env vite build\" \"cross-env nw . production \"",
+    "lint": "eslint ."
   },
   "node-remote": "<all_urls>",
   "dependencies": {
@@ -24,6 +22,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
