@@ -1,4 +1,4 @@
-function defaultRenderer(API, params){
+export default function(API, params){
   const { OperationType, VariableType, ConnectionState, AllowFlags, Direction, CollisionFlags, CameraFollow, BackgroundType, GamePlayState, BanEntryType, Callback, Utils, Room, Replay, Query, Library, RoomConfig, Plugin, Renderer, Errors, Language, EventFactory, Impl } = API;
   
   Object.setPrototypeOf(this, Renderer.prototype);
@@ -905,7 +905,6 @@ function defaultRenderer(API, params){
   var rendererObj = null; // Eb
 
   this.initialize = function(){
-    console.log("hola")
     thisRenderer.followPlayerId = thisRenderer.room.currentPlayerId;
     roomLibrariesMap = thisRenderer.room.librariesMap;
     rendererObj = new HaxballRenderer();
@@ -1114,5 +1113,3 @@ function defaultRenderer(API, params){
     rendererObj.gamePaused = snapshot.gamePaused;
   };
 };
-
-export default defaultRenderer;

@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import RoomList from './RoomList.jsx';
-import Game from './Game.jsx';
+import RoomList from './features/rooms/RoomList.jsx';
+import Game from './features/game/Game.jsx';
 
-function App() {
+function App({ showNameForm }) {
   const [roomJoined, setRoomJoined] = useState(null);
 
   if (roomJoined) {
-    return <Game roomId='a' />;
+    return <Game roomId={'yzkD7r_fbzQ'} />;
   }
 
-  return <RoomList onJoin={setRoomJoined} />;
+  return <RoomList showNameForm={showNameForm} onJoin={setRoomJoined} />;
 }
 
 export default App;

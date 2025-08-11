@@ -1,42 +1,29 @@
 import { useState, useRef, useEffect } from 'react';
-import './assets/flags.css';
-import './assets/fontello.css'
 import PerfectScrollbar from 'perfect-scrollbar';
+import { getRooms } from './rooms.service.js';
 
-const { Utils } = window.API;
-
-function RoomList({ onJoin }) {
+function RoomList({ showNameForm, onJoin }) {
   const [rooms, setRooms] = useState([]);
   const [roomSelected, setRoomSelected] = useState(null);
-  useEffect(() => {
-    Utils.getGeo().then((geo) => {
-      Utils.getRoomList().then(((roomList) => {
-        Utils.calculateAllRoomDistances(geo, roomList);
-        setRooms([...roomList.sort((a, b) => a.dist - b.dist)]);
-      })).catch(console.error);
-    }).catch(console.error);
-  }, []);
-
   const hasPassword = (room) => room.data.password ? "Yes" : "No";
   const handleRowClick = (roomId) => {
-    setRoomSelected(roomId);
+    setRoomSelected(roomId)
   };
-
-  const handleRowDoubleClick = (roomId) => {
-    onJoin(roomId);
+  const handleRowDoubleClick = (roomId) => onJoin(roomId);
+  const handleJoinClick = () => {if(roomSelected)onJoin(roomSelected)};
+  const refresh = () => {
+    setRooms([])
+    getRooms().then(setRooms)
   };
-
-  const handleJoinClick = () => {
-    if (roomSelected) {
-      onJoin(roomSelected);
-    }
-  };
-
   const containerRef = useRef(null);
 
   useEffect(() => {
     const ps = new PerfectScrollbar(containerRef.current);
     return () => ps.destroy();
+  }, []);
+
+  useEffect(() => {
+    refresh();
   }, []);
 
   return (
@@ -69,6 +56,7 @@ function RoomList({ onJoin }) {
                     <tbody data-hook="list">
                       {
                         rooms.map(room => {
+                          const flagClass = "flagico "+"f-"+room.data.flag;
                           return (
                             <tr
                               key={room.id}
@@ -82,7 +70,7 @@ function RoomList({ onJoin }) {
                               <td data-hook="players">{room.data.players}/{room.data.maxPlayers}</td>
                               <td data-hook="pass">{hasPassword(room)}</td>
                               <td>
-                                <div></div>
+                                <div data-hook="flag" className={flagClass}></div>
                                 <span data-hook="distance">{Math.round(room.dist)}km</span>
                               </td>
                             </tr>
@@ -101,7 +89,7 @@ function RoomList({ onJoin }) {
               <div className="buttons">
                 <button data-hook="refresh">
                   <i className="icon-cw"></i>
-                  <div>Refresh</div>
+                  <div onClick={refresh}>Refresh</div>
                 </button>
                 <button data-hook="join" onClick={handleJoinClick} disabled={!roomSelected}>
                   <i className="icon-login"></i>
@@ -125,7 +113,7 @@ function RoomList({ onJoin }) {
                 </button>
                 <button data-hook="changenick">
                   <i className="icon-cw"></i>
-                  <div>Change Nick</div>
+                  <div onClick={showNameForm}>Change Nick</div>
                 </button>
               </div>
             </div>

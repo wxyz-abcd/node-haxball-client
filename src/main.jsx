@@ -1,8 +1,12 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './assets/game.css';
-import App from './App.jsx'
+import { createRoot } from 'react-dom/client';
+import { PlayerDataProvider } from './hooks/PlayerDataContext';
+import Root from './Root';
+import './assets/css/game.css';
+import './assets/css/fontello.css'
+import { StrictMode } from 'react';
 
 createRoot(document.getElementById('root')).render(
-  <App />
-)
+    <PlayerDataProvider>
+      <Root />
+    </PlayerDataProvider>
+);

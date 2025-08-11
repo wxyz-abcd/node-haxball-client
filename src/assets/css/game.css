@@ -589,7 +589,7 @@ th {
 .flagico {
     width: 16px;
     height: 11px;
-    background-image: url("images/flags.png");
+    background-image: url("../images/flags.png");
     display: inline-block;
     background-position: -80px -198px
 }
@@ -3126,7 +3126,7 @@ body {
     font-size: 14px;
     color: #fff;
     background-color: #73885c;
-    background: #939e7f url("images/bg.png") fixed
+    background: #939e7f url("../images/bg.png") fixed
 }
 
 a {

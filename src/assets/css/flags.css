@@ -1,7 +1,7 @@
 .flagico {
   width: 16px;
   height: 11px;
-  background-image: url("./images/flags.png");
+  background-image: url("../images/flags.png");
   display: inline-block;
   background-position: -80px -198px;
 }
