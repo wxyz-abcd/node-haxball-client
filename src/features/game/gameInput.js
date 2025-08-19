@@ -37,34 +37,43 @@ function GameKeysHandler() {
     };
     this.pressKey = (key) => {
         this.keyState |= keyValue(key);
-        this.room.setKeyState(this.keyState);
+        this.room.setKeyState(this.keyState, true);
     };
     this.releaseKey = (key) => {
         this.keyState &= ~keyValue(key);
-        this.room.setKeyState(this.keyState);
+        this.room.setKeyState(this.keyState, true);
     };
     this.reset = () => {
         if (this.keyState == 0)
             return;
         this.keyState = 0;
-        this.room.setKeyState(0);
+        this.room.setKeyState(0, true);
     }
 };
 
-export default function setGameInputs(room, roomView) {
+export default function setGameInputs(room, roomView, chatApi) {
     const gameKeysHandler = new GameKeysHandler();
     gameKeysHandler.room = room;
     window.addEventListener("keydown", (e) => {
         switch (e.code) {
+            case 'Tab':
+            case 'Enter':
+            case 'NumpadEnter':
+                chatApi.focusOnChat();
+                e.preventDefault();
+                break;
             case 'Escape':
-                roomView()
+                if (room.gameState)
+                    roomView()
+                chatApi.blurChat()
                 break;
             default:
+                if (document.activeElement.tagName === 'input') return
                 gameKeysHandler.pressKey(e.code);
         }
     });
     window.addEventListener("keyup", (e) => {
-            gameKeysHandler.releaseKey(e.code);
+        gameKeysHandler.releaseKey(e.code);
     });
     window.addEventListener("blur", () => {
         gameKeysHandler.reset();

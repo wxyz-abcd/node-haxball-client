@@ -1,15 +1,18 @@
-import { useState } from 'react';
-import RoomList from './features/rooms/RoomList.jsx';
-import Game from './features/game/Game.jsx';
+import { Routes, Route } from "react-router-dom";
+import NameForm from "./features/player-data/nameForm";
+import RoomList from "./features/rooms/RoomList";
+import CreateRoom from "./features/rooms/CreateRoom";
+import JoinRoom from "./features/rooms/JoinRoom";
 
-function App({ showNameForm }) {
-  const [roomJoined, setRoomJoined] = useState(null);
-
-  if (roomJoined) {
-    return <Game roomId={'yzkD7r_fbzQ'} />;
-  }
-
-  return <RoomList showNameForm={showNameForm} onJoin={setRoomJoined} />;
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<NameForm />} />
+      <Route path="/RoomList" element={<RoomList />} />
+      <Route path="/CreateRoom" element={<CreateRoom />} />
+      <Route path="/JoinRoom/:id" element={<JoinRoom />} />
+    </Routes>
+  );
 }
 
 export default App;

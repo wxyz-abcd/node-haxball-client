@@ -1,16 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import PerfectScrollbar from 'perfect-scrollbar';
 import { getRooms } from './rooms.service.js';
+import { useNavigate } from "react-router-dom";
 
-function RoomList({ showNameForm, onJoin }) {
+function RoomList() {
   const [rooms, setRooms] = useState([]);
   const [roomSelected, setRoomSelected] = useState(null);
-  const hasPassword = (room) => room.data.password ? "Yes" : "No";
+  const navigate = useNavigate()
+  const showCreateRoom = () => {
+    navigate("/CreateRoom");
+  }
+  const join = (roomId) => {
+    navigate(`/JoinRoom/${roomId}`);
+  }
+
   const handleRowClick = (roomId) => {
     setRoomSelected(roomId)
   };
-  const handleRowDoubleClick = (roomId) => onJoin(roomId);
-  const handleJoinClick = () => {if(roomSelected)onJoin(roomSelected)};
+  const handleRowDoubleClick = (roomId) => join(roomId);
+  const handleJoinClick = () => { join(roomSelected) };
   const refresh = () => {
     setRooms([])
     getRooms().then(setRooms)
@@ -56,7 +64,7 @@ function RoomList({ showNameForm, onJoin }) {
                     <tbody data-hook="list">
                       {
                         rooms.map(room => {
-                          const flagClass = "flagico "+"f-"+room.data.flag;
+                          const flagClass = "flagico " + "f-" + room.data.flag;
                           return (
                             <tr
                               key={room.id}
@@ -68,7 +76,7 @@ function RoomList({ showNameForm, onJoin }) {
                                 <span data-hook="name">{room.data.name}</span>
                               </td>
                               <td data-hook="players">{room.data.players}/{room.data.maxPlayers}</td>
-                              <td data-hook="pass">{hasPassword(room)}</td>
+                              <td data-hook="pass">{room.data.password ? "Yes" : "No"}</td>
                               <td>
                                 <div data-hook="flag" className={flagClass}></div>
                                 <span data-hook="distance">{Math.round(room.dist)}km</span>
@@ -87,15 +95,15 @@ function RoomList({ showNameForm, onJoin }) {
                 </div>
               </div>
               <div className="buttons">
-                <button data-hook="refresh">
+                <button data-hook="refresh" onClick={refresh}>
                   <i className="icon-cw"></i>
-                  <div onClick={refresh}>Refresh</div>
+                  <div>Refresh</div>
                 </button>
                 <button data-hook="join" onClick={handleJoinClick} disabled={!roomSelected}>
                   <i className="icon-login"></i>
                   <div>Join Room</div>
                 </button>
-                <button data-hook="create">
+                <button data-hook="create" onClick={() => showCreateRoom()}>
                   <i className="icon-plus"></i>
                   <div>Create Room</div>
                 </button>
@@ -113,7 +121,7 @@ function RoomList({ showNameForm, onJoin }) {
                 </button>
                 <button data-hook="changenick">
                   <i className="icon-cw"></i>
-                  <div onClick={showNameForm}>Change Nick</div>
+                  <div onClick={()=>navigate('/')}>Change Nick</div>
                 </button>
               </div>
             </div>

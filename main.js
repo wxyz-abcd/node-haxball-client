@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 const API = require("node-haxball")();
 
 const isDev = nw.App.argv[0] === "development";
