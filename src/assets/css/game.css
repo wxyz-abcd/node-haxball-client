@@ -1581,7 +1581,6 @@ th {
     width: 800px;
     min-width: 300px;
     position: relative;
-    transition: height .2s;
     margin: 0 5px 0 5px
 }
 
