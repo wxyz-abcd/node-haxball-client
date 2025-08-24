@@ -46,9 +46,9 @@ function Sound() {
   };
 }
 
-export default function Game({ roomRef }) {
+export default function Game({ roomRef, usingCustomAPI }) {
   console.log("logging Game component render", roomRef?.current?.name);
-  const API = window.API;
+  const API = usingCustomAPI || window.API;
   const { player, setPlayerField } = usePlayerData();
 
   const [ping, setPing] = useState(0);

@@ -119,9 +119,12 @@ function RoomList() {
                   <i className="icon-cog"></i>
                   <div>Settings</div>
                 </button>
-                <button data-hook="changenick">
+                <button onClick={()=>navigate('/')} data-hook="changenick">
                   <i className="icon-cw"></i>
-                  <div onClick={()=>navigate('/')}>Change Nick</div>
+                  <div>Change Nick</div>
+                </button>
+                <button onClick={()=>navigate('/CreateSandbox')} data-hook="changenick">
+                  <div>Sandbox</div>
                 </button>
               </div>
             </div>
