@@ -58,7 +58,7 @@ export default function Game({ roomRef }) {
   const [timeWarn, setTimeWarn] = useState(false);
   const [overtime, setOvertime] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showRoomView, setShowRoomView] = useState(true);
+  const [showRoomView, setShowRoomView] = useState(false);
   const [chatRows, setChatRows] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [players, setPlayers] = useState([]);
@@ -90,19 +90,146 @@ export default function Game({ roomRef }) {
 
   const analyzeChatCommand = (msg) => {
     if (!msg || msg.charAt(0) !== "/") return false;
+    const room = roomRef.current;
     const tokens = msg.substring(1).split(" ");
+    var { parseHexInt } = API.Utils;
     switch (tokens[0]) {
       case "avatar":
         if (tokens[1]) {
-          roomRef.current?.setAvatar(tokens[1]);
+          room.setAvatar(tokens[1]);
           setPlayerField('avatar', tokens[1]);
           chatApi.receiveNotice("Avatar set");
         }
         break;
       case "clear_avatar":
-        roomRef.current?.setAvatar(null);
+        room.setAvatar(null);
         setPlayerField('avatar', null);
         chatApi.receiveNotice("Avatar cleared");
+        break;
+      case "checksum":
+        var cs = room.stadium.calculateChecksum();
+        if (!cs)
+          chatApi.receiveNotice('Current stadium is original: "' + room.stadium.name + '"')
+        else
+          chatApi.receiveNotice('Stadium: "' + room.stadium.name + '" (checksum: ' + cs + ")")
+        break;
+      case "clear_bans":
+        if (room.isHost) {
+          room.clearBans(null);
+          chatApi.receiveNotice("All bans have been cleared");
+        }
+        else
+          chatApi.receiveNotice("Only the host can clear bans");
+        break;
+      case "set_password":
+        if (tokens.length == 2) {
+          if (room.isHost) {
+            room.setProperties({ password: tokens[1] });
+            chatApi.receiveNotice("Password set");
+          }
+          else
+            chatApi.receiveNotice("Only the host can change the password");
+        }
+        break;
+      case "clear_password":
+        if (room.isHost) {
+          room.setProperties({ password: null });
+          chatApi.receiveNotice("Password cleared");
+        }
+        else
+          chatApi.receiveNotice("Only the host can change the password");
+        break;
+      case "colors":
+        try {
+          var teamId = (tokens[1] == "blue") ? 2 : 1;
+          var angle = tokens[2];
+          if (angle == "clear") {
+            angle = 0;
+            msg = [];
+          }
+          else
+            msg.splice(0, 3);
+          room.setTeamColors(teamId, angle, ...msg.map(c => parseHexInt("0x" + c)));
+        } catch (g) {
+          chatApi.receiveNotice(msg.toString());
+        }
+        break;
+      case "extrapolation":
+        if (tokens.length == 2) {
+          const value = parseHexInt(tokens[1]);
+          if (value != null) { // && -200 <= msg && 200 >= msg
+            room.renderer.extrapolation = value;
+            chatApi.receiveNotice("Extrapolation set to " + value + " msec");
+            setPlayerField("extrapolation", value);
+          }
+          else
+            chatApi.receiveNotice("Extrapolation must be a value between -200 and 200 milliseconds");
+        }
+        else
+          chatApi.receiveNotice("Extrapolation requires a value in milliseconds.");
+        break;
+      case "handicap":
+        if (tokens.length == 2) {
+          const value = parseHexInt(tokens[1]);
+          if (value != null) { // && 0 <= msg && 300 >= msg
+            room.setHandicap(value);
+            chatApi.receiveNotice("Ping handicap set to " + value + " msec");
+          }
+          else
+            chatApi.receiveNotice("Ping handicap must be a value between 0 and 300 milliseconds");
+        }
+        else
+          chatApi.receiveNotice("Ping handicap requires a value in milliseconds.");
+        break;
+      case "kick_ratelimit":
+        if (tokens.length < 4)
+          chatApi.receiveNotice("Usage: /kick_ratelimit <min> <rate> <burst>");
+        else {
+          var d = parseHexInt(tokens[1]), e = parseHexInt(tokens[2]);
+          const value = parseHexInt(tokens[3]);
+          if (d == null || e == null || value == null)
+            chatApi.receiveNotice("Invalid arguments");
+          else
+            room.setKickRateLimit(d, e, msg);
+        }
+        break;
+      case "recaptcha":
+        if (!room.isHost)
+          chatApi.receiveNotice("Only the host can set recaptcha mode");
+        else
+          try {
+            if (tokens.length == 2) {
+              switch (tokens[1]) {
+                case "off":
+                  e = false;
+                  break;
+                case "on":
+                  e = true;
+                  break;
+                default:
+                  throw null;
+              }
+              room.setRecaptcha(e);
+              chatApi.receiveNotice("Room join Recaptcha " + (e ? "enabled" : "disabled"));
+            }
+            else
+              throw null;
+          } catch (g) {
+            chatApi.receiveNotice("Usage: /recaptcha <on|off>");
+          }
+        break;
+      case "store":
+        var f = room.stadium;
+        if (!f.isCustom)
+          chatApi.receiveNotice("Can't store default stadium.");
+        else {
+          chatApi.receiveNotice("Not implemented to keep the web examples simple.");
+          //insertStadium({name: f.name, contents: API.Utils.exportStadium(f)}).then(()=>{
+          //chatApi.receiveNotice("Stadium stored");
+          //}, ()=>{
+          //chatApi.receiveNotice("Couldn't store stadium");
+          //});
+        };
         break;
       default:
         chatApi.receiveNotice(`Unknown command: ${tokens[0]}`);
@@ -130,7 +257,7 @@ export default function Game({ roomRef }) {
     if (roomRef.current.isRecording()) {
       const data = roomRef.current.stopRecording();
       const date = new Date();
-      const fileName = `HBReplay-${date.getFullYear()}-${make2Digits(date.getMonth()+1)}-${make2Digits(date.getDate())}-${make2Digits(date.getHours())}h${make2Digits(date.getMinutes())}m.hbr2`;
+      const fileName = `HBReplay-${date.getFullYear()}-${make2Digits(date.getMonth() + 1)}-${make2Digits(date.getDate())}-${make2Digits(date.getHours())}h${make2Digits(date.getMinutes())}m.hbr2`;
       downloadFile(fileName, "octet/stream", data);
       setIsRecording(false);
     } else {
@@ -184,6 +311,7 @@ export default function Game({ roomRef }) {
     setScoreLimit(room.scoreLimit);
     setTeamsLocked(room.state?.teamsLocked ?? true);
     setIsAdmin(room.currentPlayer.isAdmin);
+    if (!room.gameState) setShowRoomView(true);
 
     const s = new Sound();
     soundRef.current = s;
@@ -234,6 +362,7 @@ export default function Game({ roomRef }) {
           onRequestAnimationFrame: () => updateGameStateGUI(room.gameState)
         });
         room.setRenderer(defaultRendererObj);
+        room.renderer.extrapolation = player.extrapolation;
         if (player.extrapolation != null) room.renderer.extrapolation = player.extrapolation;
         setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi);
       } catch (err) {
@@ -263,7 +392,7 @@ export default function Game({ roomRef }) {
   return (
     <div className="game-view">
       <div className="gameplay-section">
-        <div className="game-state-view">
+        <div className="game-state-view" hidden={!gameStarted}>
           <div className="bar-container">
             <div className="bar">
               <div className="scoreboard">
@@ -289,7 +418,7 @@ export default function Game({ roomRef }) {
       </div>
 
       <div className="top-section" data-hook="top-section">
-        { showRoomView ? (
+        {showRoomView ? (
           <RoomHeader
             roomRef={roomRef}
             roomName={roomName}
@@ -308,7 +437,7 @@ export default function Game({ roomRef }) {
             players={players}
             setPopup={setPopup}
           />
-        ) : null }
+        ) : null}
       </div>
 
       <div className="bottom-section">

@@ -29,7 +29,7 @@ export default function useRoomJoin() {
         authObj
       }, {
         storage: {
-          name: player.name,
+          player_name: player.name,
           avatar: player.avatar,
           player_auth_key: authKey,
         },

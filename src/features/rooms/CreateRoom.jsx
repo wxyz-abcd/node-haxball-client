@@ -21,7 +21,7 @@ export default function CreateRoom() {
       password,
       maxPlayerCount: maxPl,
       showInRoomList,
-      storage: { player_name: player.name, avatar: player.avatar },
+      storage: { player_name: player.name, avatar: player.avatar, player_auth_key: player.authKey },
       token  // we must show basro's token recaptcha somehow
     });
     setRoomCreated(true);
