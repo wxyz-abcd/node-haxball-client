@@ -6,7 +6,8 @@ export default function PlayerDataProvider({ children }) {
     name: null,
     authKey: null,
     geo: null,
-    avatar: null
+    avatar: null,
+    chatOpacity: 0.8
   });
 
   const setPlayerField = (field, value) => {

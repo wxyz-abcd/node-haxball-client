@@ -390,7 +390,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
   };
 
   return (
-    <div className="game-view">
+    <div className="game-view" style={{ "--chat-opacity": `${player.chatOpacity}` }}>
       <div className="gameplay-section">
         <div className="game-state-view" hidden={!gameStarted}>
           <div className="bar-container">
