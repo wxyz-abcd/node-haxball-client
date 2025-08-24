@@ -7,7 +7,12 @@ export default function PlayerDataProvider({ children }) {
     authKey: null,
     geo: null,
     avatar: null,
-    chatOpacity: 0.8
+    chatOpacity: 0.8,
+    lowLatencyCanvas: true,
+    soundChat: true,
+    soundCrowd: true,
+    soundMain: true,
+    soundHighlight: true,
   });
 
   const setPlayerField = (field, value) => {
