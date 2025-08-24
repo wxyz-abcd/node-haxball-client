@@ -22,7 +22,7 @@ document.getElementById("jr").onclick = function(){
     "p_avatar": document.getElementById("p_avatar").value,
     "p_lat": document.getElementById("p_lat").value,
     "p_lon": document.getElementById("p_lon").value,
-    "p_flag": p_flag_elem.value,
+    "p_flag": "tr"/*p_flag_elem.value*/,
     "token": document.getElementById("token").value,
     "autoPlay": document.getElementById("autoPlay").checked.toString(),
     "aimbot": document.getElementById("aimbot").checked.toString()

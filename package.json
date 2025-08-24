@@ -2,6 +2,7 @@
   "name": "node-haxball-client",
   "main": "main.html",
   "version": "1.0.0",
+  "chromium-args": "--mixed-context",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,4 +1,8 @@
 {
-    "name": "test",
-    "main": "roomList.html"
+  "name": "test",
+  "main": "roomList.html",
+  "chromium-args": "--mixed-context",
+  "dependencies": {
+    "node-haxball": "^2.2.0"
+  }
 }

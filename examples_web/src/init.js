@@ -1,13 +1,9 @@
 function init(headless, roomCallback){
   const API = abcHaxballAPI(window,{
-    noVariableValueChangeEvent: true
-    /*
+    noVariableValueChangeEvent: true,
     proxy: {
-      WebSocketChangeOriginAllowed: false,
-      WebSocketUrl: "wss://surf-emerald-armadillo.glitch.me/",
-      HttpUrl: "https://surf-emerald-armadillo.glitch.me/rs/"
+      WebSocketChangeOriginAllowed: true
     }
-    */
   }); // if you use our haxballOriginModifier extension, you don't need a proxy server. (But you still have to serve the files, you cannot open the html directly.)
 
   const { OperationType, VariableType, ConnectionState, AllowFlags, Direction, CollisionFlags, CameraFollow, BackgroundType, GamePlayState, BanEntryType, Callback, Utils, Room, Replay, Query, Library, RoomConfig, Plugin, Renderer, Errors, Language, EventFactory, Impl } = API;
