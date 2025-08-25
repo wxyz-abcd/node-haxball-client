@@ -1,8 +1,8 @@
 {
-  "name": "node-haxball-app",
+  "name": "node-haxball-client",
   "main": "main.js",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"cross-env vite\" \"cross-env nw . development\"",
