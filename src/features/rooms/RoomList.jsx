@@ -1,8 +1,34 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo, useCallback } from "react";
 import PerfectScrollbar from "perfect-scrollbar";
 import { getRooms } from "./rooms.service.js";
 import { useNavigate } from "react-router-dom";
 import SettingsPopup from "../../components/SettingsPopup.jsx";
+
+const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
+  const flagClass = "flagico " + "f-" + room.data.flag;
+  const click = useCallback(()=>onClick(room.id), [onClick, room.id]);
+  const doubleClick = useCallback(()=>onDoubleClick(room.id), [onDoubleClick, room.id]);
+
+  return (
+    <tr
+      onClick={click}
+      onDoubleClick={doubleClick}
+      className={isSelected ? "selected" : ""}
+    >
+      <td>
+        <span data-hook="name">{room.data.name}</span>
+      </td>
+      <td data-hook="players">
+        {room.data.players}/{room.data.maxPlayers}
+      </td>
+      <td data-hook="pass">{room.data.password ? "Yes" : "No"}</td>
+      <td>
+        <div data-hook="flag" className={flagClass}></div>
+        <span data-hook="distance">{Math.round(room.dist)}km</span>
+      </td>
+    </tr>
+  );
+});
 
 function RoomList() {
   const [rooms, setRooms] = useState([]);
@@ -10,27 +36,31 @@ function RoomList() {
   const [roomSelected, setRoomSelected] = useState(null);
   const [showComponent, setShowComponent] = useState(null);
   const navigate = useNavigate();
+  const join = useCallback((roomId) => navigate(`/JoinRoom/${roomId}`), [navigate]);
   const handleRowClick = (roomId) => setRoomSelected(roomId);
   const handleRowDoubleClick = (roomId) => join(roomId);
-  const handleJoinClick = () => { join(roomSelected) };
-  const showCreateRoom = () => navigate("/CreateRoom");
-  const join = (roomId) => navigate(`/JoinRoom/${roomId}`);
-  const handleSettings = () =>
-    setShowComponent(<SettingsPopup onClose={() => setShowComponent(null)} />);
-  const refresh = () => {
+  const handleJoinClick = useCallback(() => {
+    join(roomSelected);
+  }, [join, roomSelected]);
+  const showCreateRoom = useCallback(() => navigate("/CreateRoom"), [navigate]);
+  const handleSettings = useCallback(() => setShowComponent(<SettingsPopup onClose={() => setShowComponent(null)} />), []);
+  const refresh = useCallback(() => {
     setRooms([]);
     getRooms().then(setRooms);
-  };
+  }, []);
+  const goToNameForm = useCallback(() => navigate('/'), [navigate]);
+  const goToHeadless = useCallback(() => navigate('/Headless'), [navigate]);
+  const goToSandbox = useCallback(() => navigate('/CreateSandbox'), [navigate]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
-    if (showComponent) return; 
+    if (showComponent) return;
     const ps = new PerfectScrollbar(containerRef.current);
     return () => ps.destroy();
-  }, [showComponent])
+  }, [showComponent]);
 
   return showComponent ? (
     showComponent
@@ -73,35 +103,15 @@ function RoomList() {
                       <col></col>
                     </colgroup>
                     <tbody data-hook="list">
-                      {rooms.map((room) => {
-                        const flagClass = "flagico " + "f-" + room.data.flag;
-                        return (
-                          <tr
-                            key={room.id}
-                            onClick={() => handleRowClick(room.id)}
-                            onDoubleClick={() => handleRowDoubleClick(room.id)}
-                            className={
-                              roomSelected === room.id ? "selected" : ""
-                            }
-                          >
-                            <td>
-                              <span data-hook="name">{room.data.name}</span>
-                            </td>
-                            <td data-hook="players">
-                              {room.data.players}/{room.data.maxPlayers}
-                            </td>
-                            <td data-hook="pass">
-                              {room.data.password ? "Yes" : "No"}
-                            </td>
-                            <td>
-                              <div data-hook="flag" className={flagClass}></div>
-                              <span data-hook="distance">
-                                {Math.round(room.dist)}km
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {rooms.map((room) => (
+                        <RoomListItem
+                          key={room.id}
+                          room={room}
+                          isSelected={roomSelected === room.id}
+                          onClick={handleRowClick}
+                          onDoubleClick={handleRowDoubleClick}
+                        />
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -130,19 +140,19 @@ function RoomList() {
                   <i className="icon-login"></i>
                   <div>Join Room</div>
                 </button>
-                <button data-hook="create" onClick={() => showCreateRoom()}>
+                <button data-hook="create" onClick={showCreateRoom}>
                   <i className="icon-plus"></i>
                   <div>Create Room</div>
                 </button>
                 <div className="spacer"></div>
                 <button
-                  onClick={() => navigate("/CreateSandbox")}
+                  onClick={goToSandbox}
                   data-hook="sandbox"
                 >
                   <div>Sandbox</div>
                 </button>
                 <button
-                  onClick={() => navigate("/Headless")}
+                  onClick={goToHeadless}
                   data-hook="headless"
                 >
                   <div>Headless</div>
@@ -163,7 +173,7 @@ function RoomList() {
                   <i className="icon-cog"></i>
                   <div>Settings</div>
                 </button>
-                <button onClick={() => navigate("/")} data-hook="changenick">
+                <button onClick={goToNameForm} data-hook="changenick">
                   <i className="icon-cw"></i>
                   <div>Change Nick</div>
                 </button>
