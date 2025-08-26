@@ -135,6 +135,18 @@ function RoomList() {
                   <div>Create Room</div>
                 </button>
                 <div className="spacer"></div>
+                <button
+                  onClick={() => navigate("/CreateSandbox")}
+                  data-hook="sandbox"
+                >
+                  <div>Sandbox</div>
+                </button>
+                <button
+                  onClick={() => navigate("/Headless")}
+                  data-hook="headless"
+                >
+                  <div>Headless</div>
+                </button>
                 <div className="file-btn">
                   <label htmlFor="replayfile">
                     <i className="icon-play"></i>
@@ -154,12 +166,6 @@ function RoomList() {
                 <button onClick={() => navigate("/")} data-hook="changenick">
                   <i className="icon-cw"></i>
                   <div>Change Nick</div>
-                </button>
-                <button
-                  onClick={() => navigate("/CreateSandbox")}
-                  data-hook="changenick"
-                >
-                  <div>Sandbox</div>
                 </button>
               </div>
             </div>
