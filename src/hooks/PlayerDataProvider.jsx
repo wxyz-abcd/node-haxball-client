@@ -1,22 +1,12 @@
-import { useLocalStorageState } from './useLocalStorageState';
-import { PlayerDataContext } from './PlayerDataContext';
+import { useLocalStorageState } from "./useLocalStorageState";
+import { PlayerDataContext } from "./PlayerDataContext";
+import playerDataDefaultValues from "./PlayerDataDefaultValues";
 
 export default function PlayerDataProvider({ children }) {
-  const [player, setPlayer] = useLocalStorageState('playerData', {
-    name: null,
-    authKey: null,
-    geo: null,
-    avatar: null,
-    chatOpacity: 0.8,
-    lowLatencyCanvas: true,
-    soundChat: true,
-    soundCrowd: true,
-    soundMain: true,
-    soundHighlight: true,
-  });
+  const [player, setPlayer] = useLocalStorageState("playerData", playerDataDefaultValues);
 
   const setPlayerField = (field, value) => {
-    setPlayer(prev => ({ ...prev, [field]: value }));
+    setPlayer((prev) => ({ ...prev, [field]: value }));
   };
 
   return (

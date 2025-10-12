@@ -1,0 +1,88 @@
+.dropDown {
+  position: relative;
+  min-height: 30px;
+  padding: 0 10px;
+  background-color: #1847c7;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  user-select: none;
+  transition: background 0.2s;
+  width: 200px;
+}
+
+.dropDown:hover {
+  background-color: #0f357a;
+}
+
+.dropDownContents {
+  display: flex;
+  align-items: center;
+}
+
+.dropDownPopup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 180px;
+  overflow-y: auto;
+  background-color: #2492ad98;
+  border: 1px solid #333;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  padding: 4px 0;
+  z-index: 10000;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0s 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropDownPopup.visible {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.dropDownPopup .elem {
+  display: flex;
+  align-items: center;
+  padding: 18px 12px;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 14px;
+}
+
+.dropDownPopup .elem:hover {
+  background-color: #577788;
+}
+
+.dropDownPopup .elem.selected {
+  background-color: #5a96bb;
+}
+
+.dropDownPopup::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropDownPopup::-webkit-scrollbar-track {
+  background: #222;
+  border-radius: 3px;
+}
+
+.dropDownPopup::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.dropDownPopup::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}

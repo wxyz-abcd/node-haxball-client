@@ -1,7 +1,7 @@
 import React from "react";
 import PlayerListView from './PlayerListView.jsx';
 
-export default function RoomHeader({
+export default React.memo(function RoomHeader({
   roomRef,
   roomName,
   stadiumName,
@@ -107,4 +107,4 @@ export default function RoomHeader({
       </div>
     </div>
   );
-}
+})

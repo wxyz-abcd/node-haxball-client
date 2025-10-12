@@ -1,60 +1,48 @@
-function GameKeysHandler() {
-    this.keyState = 0;
-    this.room = null;
-
-    var keys = new Map();
-    keys.set("ArrowUp", "Up");
-    keys.set("KeyW", "Up");
-    keys.set("ArrowDown", "Down");
-    keys.set("KeyS", "Down");
-    keys.set("ArrowLeft", "Left");
-    keys.set("KeyA", "Left");
-    keys.set("ArrowRight", "Right");
-    keys.set("KeyD", "Right");
-    keys.set("KeyX", "Kick");
-    keys.set("Space", "Kick");
-    keys.set("ControlLeft", "Kick");
-    keys.set("ControlRight", "Kick");
-    keys.set("ShiftLeft", "Kick");
-    keys.set("ShiftRight", "Kick");
-    keys.set("Numpad0", "Kick");
-
-    var keyValue = function (key) {
-        switch (keys.get(key)) {
-            case "Down":
-                return 2;
-            case "Kick":
-                return 16;
-            case "Left":
-                return 4;
-            case "Right":
-                return 8;
-            case "Up":
-                return 1;
-            default:
-                return 0;
-        }
-    };
-    this.pressKey = (key) => {
-        this.keyState |= keyValue(key);
-        this.room.setKeyState(this.keyState, true);
-    };
-    this.releaseKey = (key) => {
-        this.keyState &= ~keyValue(key);
-        this.room.setKeyState(this.keyState, true);
-    };
-    this.reset = () => {
-        if (this.keyState == 0)
-            return;
+class GameKeysHandler {
+    constructor(playerKeys, room) {
         this.keyState = 0;
-        this.room.setKeyState(0, true);
+        this.room = room;
+
+        const keys = new Map();
+        Object.entries(playerKeys).forEach(([action, keyList]) => {
+            keyList.forEach((key) => {
+                keys.set(key, action.charAt(0).toUpperCase() + action.slice(1));
+            });
+        });
+
+        const keyValue = (key) => {
+            switch (keys.get(key)) {
+                case "Down": return 2;
+                case "Kick": return 16;
+                case "Left": return 4;
+                case "Right": return 8;
+                case "Up": return 1;
+                default: return 0;
+            }
+        };
+
+        this.pressKey = (key) => {
+            this.keyState |= keyValue(key);
+            this.room.setKeyState(this.keyState, true);
+        };
+
+        this.releaseKey = (key) => {
+            this.keyState &= ~keyValue(key);
+            this.room.setKeyState(this.keyState, true);
+        };
+
+        this.reset = () => {
+            if (this.keyState === 0) return;
+            this.keyState = 0;
+            this.room.setKeyState(0, true);
+        };
     }
 };
 
-export default function setGameInputs(room, roomView, chatApi) {
-    const gameKeysHandler = new GameKeysHandler();
-    gameKeysHandler.room = room;
-    window.addEventListener("keydown", (e) => {
+export default function setGameInputs(room, roomView, chatApi, keys, canvas, chatInput) {
+    const gameKeysHandler = new GameKeysHandler(keys, room);
+
+    const handleKeyDown = (e) => {
         switch (e.code) {
             case 'Tab':
             case 'Enter':
@@ -63,19 +51,39 @@ export default function setGameInputs(room, roomView, chatApi) {
                 e.preventDefault();
                 break;
             case 'Escape':
-                if (room.gameState)
-                    roomView()
-                chatApi.blurChat()
+                if (document.activeElement !== chatInput) roomView();
+                canvas.focus();
                 break;
             default:
-                if (document.activeElement.tagName === 'input') return
+                if (document.activeElement == chatInput) return;
                 gameKeysHandler.pressKey(e.code);
         }
-    });
-    window.addEventListener("keyup", (e) => {
+    };
+
+    const handleKeyUp = (e) => {
         gameKeysHandler.releaseKey(e.code);
-    });
-    window.addEventListener("blur", () => {
+    };
+
+    const handleBlur = () => {
         gameKeysHandler.reset();
-    });
+    };
+
+    const handleWheel = (event) => {
+        room._onWheel(event);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    canvas.addEventListener("blur", handleBlur);
+    canvas.addEventListener("wheel", handleWheel);
+    setTimeout(()=>canvas.focus())
+    return {
+        kill: () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
+            canvas.removeEventListener("blur", handleBlur);
+            canvas.removeEventListener("wheel", handleWheel);
+            gameKeysHandler.reset();
+        }
+    };
 }

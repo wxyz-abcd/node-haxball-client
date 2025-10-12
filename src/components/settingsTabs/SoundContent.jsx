@@ -1,20 +1,21 @@
 import { useState } from "react";
-import Toggle from "./Toggle";
+import Toggle from "../Toggle";
+import playerDefaultValues from "../../hooks/PlayerDataDefaultValues"
 
 export default function SoundContent({ player, setPlayerField }) {
   const [playerCopy, setPlayerCopy] = useState(player);
 
   const changed = (field, value) => {
-    setPlayerField(field, value);
-    setPlayerCopy(prev => ({ ...prev, [field]: value }));
+    setPlayerField('chat', { ...player.sound, [field]: value });
+    setPlayerCopy(prev => ({ ...prev, sound: { ...prev.sound, [field]: value } }));
   };
 
   return (
     <div className="section selected">
-        <Toggle text='Sounds enabled' state={playerCopy.soundMain} onClick={() => changed("soundMain", !playerCopy.soundMain)}/>
-        <Toggle text='Chat sound enabled' state={playerCopy.soundChat} onClick={() => changed("soundChat", !playerCopy.soundChat)}/>
-        <Toggle text='Nick highlight sound enabled' state={playerCopy.soundHighlight} onClick={() => changed("soundHighlight", !playerCopy.soundHighlight)}/>
-        <Toggle text='Crowd sound enabled' state={playerCopy.soundCrowd} onClick={() => changed("soundCrowd", !playerCopy.soundCrowd)}/>
+        <Toggle title='Sounds enabled' value={playerCopy.sound.main} defaultValue={playerDefaultValues.sound.main} onChange={(value) => changed("main", value)}/>
+        <Toggle title='Chat sound enabled' value={playerCopy.sound.chat} defaultValue={playerDefaultValues.sound.chat} onChange={(value) => changed("chat", value)}/>
+        <Toggle title='Nick highlight sound enabled' value={playerCopy.sound.highlight} defaultValue={playerDefaultValues.sound.highlight} onChange={(value) => changed("highlight", value)}/>
+        <Toggle title='Crowd sound enabled' value={playerCopy.sound.crowd} defaultValue={playerDefaultValues.sound.crowd} onChange={(value) => changed("crowd", value)}/>
     </div>
   );
 }

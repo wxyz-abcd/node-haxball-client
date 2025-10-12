@@ -1,0 +1,18 @@
+[
+  {
+    "name": "English",
+    "abbr": "gb"
+  },
+  {
+    "name": "Português",
+    "abbr": "pt"
+  },
+  {
+    "name": "Español",
+    "abbr": "es"
+  },
+  {
+    "name": "Türkçe",
+    "abbr": "tr"
+  }
+]

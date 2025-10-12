@@ -1,4 +1,5 @@
 import AdminPopup from "./popups/AdminPopup";
+import React from "react";
 
 function PlayerListView({ players, teamId, teamClass, joinLabel, showReset, isAdmin, gameStarted, teamsLocked, room, showPopup }) {
   const teamPlayers = players.filter(p => p.team.id === teamId);
@@ -21,7 +22,7 @@ function PlayerListView({ players, teamId, teamClass, joinLabel, showReset, isAd
   const handleContextMenu = (e, playerId) => {
     e.preventDefault()
     const clickedPlayer = room.getPlayer(playerId)
-    showPopup(<AdminPopup room={room} player={room.currentPlayer} clickedPlayer={clickedPlayer} showPopup={showPopup}/>)
+    showPopup({component: AdminPopup, props: {room: room, player: room.currentPlayer, clickedPlayer: clickedPlayer, showPopup: showPopup}})
   }
 
   return (
@@ -56,4 +57,4 @@ function PlayerListView({ players, teamId, teamClass, joinLabel, showReset, isAd
   );
 }
 
-export default PlayerListView;
+export default React.memo(PlayerListView);

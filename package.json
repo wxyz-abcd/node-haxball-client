@@ -5,14 +5,16 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"cross-env vite\" \"cross-env nw . development\"",
-    "preview": "concurrently \"cross-env vite build\" \"cross-env nw . production \"",
+    "dev": "concurrently \"cross-env vite\" \"cross-env nw ./ development\"",
+    "preview": "cross-env vite build && cross-env nw ./ production",
+    "dist": "vite build && nwbuild --platform=linux --mode=build --glob=false --flavor=sdk --cacheDir=./node_modules/nw ./",
     "lint": "eslint ."
   },
   "window": {
     "transparent": true,
     "frame": true
   },
+  "chromium-args": "--allow-file-access-from-files --disable-web-security",
   "node-remote": "<all_urls>",
   "dependencies": {
     "@koush/wrtc": "^0.5.3",
@@ -35,6 +37,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "nw": "^0.102.0-sdk",
+    "nw-builder": "^4.15.0",
     "vite": "^7.0.4"
   }
 }

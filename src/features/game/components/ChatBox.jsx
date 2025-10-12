@@ -1,19 +1,26 @@
 import { Resizable } from "re-resizable";
-
-export default function ChatBox({
+import React from 'react'
+export default React.memo(function ChatBox({
   chatRows,
   inputValue,
   setInputValue,
   inputKeyDown,
   chatInputRef,
+  height,
+  setPlayerField,
+  roomRef,
+  player
 }) {
+  const resizeStop = (event, from, element) => {
+    setPlayerField("chat", {...player.chat, height: parseInt(element.style.height, 10) });
+  };
   return (
     <Resizable
       defaultSize={{
-        height: 300,
+        height: height,
       }}
-      minHeight={'33px'}
-      maxHeight={'400px'}
+      minHeight={"33px"}
+      maxHeight={"400px"}
       enable={{
         top: true,
       }}
@@ -21,8 +28,9 @@ export default function ChatBox({
         top: <div data-hook="drag" className="drag"></div>,
       }}
       className="chatbox-view"
+      onResizeStop={resizeStop}
     >
-      <div className="chatbox-view-contents">
+      <div tabIndex={-1} className="chatbox-view-contents">
         <div data-hook="log" className="log subtle-thin-scrollbar">
           <div className="log-contents">
             {chatRows.map(({ type, className, content, color, font }, i) => {
@@ -78,9 +86,11 @@ export default function ChatBox({
             data-hook="input"
             type="text"
             maxLength={140}
+            onFocus={()=>roomRef.current.setChatIndicatorActive(true)}
+            onBlur={()=>roomRef.current.setChatIndicatorActive(false)}
           />
         </div>
       </div>
     </Resizable>
   );
-}
+});
