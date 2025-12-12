@@ -12,6 +12,7 @@ export default function useRoomCreate() {
     setError(null);
 
     try {
+      API.Callback.add("Wheel");
       Room.create({
         name,
         password: password || null,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import defaultRenderer from './renderer.js';
 import grass from '../../assets/images/grass.png';
 import concrete from '../../assets/images/concrete.png';
@@ -6,10 +6,11 @@ import concrete2 from '../../assets/images/concrete2.png';
 import typing from '../../assets/images/typing.png';
 import { loadImage } from "../../utils/loadImage.js";
 import setGameInputs from "./gameInput.js";
-import { usePlayerData } from '../../hooks/usePlayerData';
+import { usePlayerData } from '../../hooks/usePlayerData.jsx';
 import LeaveRoomPopup from "./components/popups/LeaveRoomPopup.jsx";
 import RoomLinkPopup from "./components/popups/RoomLinkPopup.jsx";
 import StadiumPickPopup from "./components/popups/StadiumPickPopup.jsx";
+import SettingsPopup from '../../components/SettingsPopup.jsx'
 import { downloadFile } from "../../utils/downloadFile.js";
 import ChatBox from './components/ChatBox.jsx';
 import RoomHeader from './components/RoomHeader.jsx';
@@ -21,13 +22,16 @@ import highlightSnd from "../../assets/sounds/highlight.wav"
 import joinSnd from "../../assets/sounds/join.ogg"
 import kickSnd from "../../assets/sounds/kick.ogg"
 import leaveSnd from "../../assets/sounds/leave.ogg"
+import Popup from '../../components/Popup.jsx'
+import { useCallback } from "react";
+import SoundButton from "./components/SoundButton.jsx";
 
 var oldGUIValues = {};
 
-function Sound() {
+function Sound(volume) {
   this.audio = new (window.AudioContext || window.webkitAudioContext)();
   this.gain = this.audio.createGain();
-  this.gain.gain.value = 1;
+  this.gain.gain.value = volume;
   this.gain.connect(this.audio.destination);
   this.loadSound = (path) => {
     return fetch(path).then(res => {
@@ -47,11 +51,8 @@ function Sound() {
 }
 
 export default function Game({ roomRef, usingCustomAPI }) {
-  console.log("logging Game component render", roomRef?.current?.name);
-  const API = usingCustomAPI || window.API;
+  const API = useMemo(()=>(usingCustomAPI || window.API), [usingCustomAPI]);
   const { player, setPlayerField } = usePlayerData();
-
-  const [ping, setPing] = useState(0);
   const [roomName, setRoomName] = useState(null);
   const [roomScore, setRoomScore] = useState({ red: 0, blue: 0 });
   const [stadiumName, setStadiumName] = useState(null);
@@ -72,23 +73,22 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const [timeLimit, setTimeLimit] = useState(0);
   const [scoreLimit, setScoreLimit] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-
   const canvasRef = useRef(null);
   const chatInput = useRef(null);
+  const soundInstanceRef = useRef(null);
   const soundRef = useRef(null);
-
-  const chatApi = {
+  const chatApi = useMemo(()=>({
     receiveChatMessage: (nick, msg) => setChatRows(prev => [...prev, { type: 0, content: nick + ": " + msg }]),
     receiveAnnouncement: (msg, color, style) => setChatRows(prev => [...prev, { type: 1, content: msg, color, font: style }]),
     receiveNotice: (msg) => setChatRows(prev => [...prev, { type: 0, content: msg, className: "notice" }]),
     focusOnChat: () => {
-      if (document.activeElement === chatInput.current) chatInput.current.blur();
+      if (document.activeElement === chatInput.current) canvasRef.current.focus();
       else chatInput.current.focus();
     },
     blurChat: () => chatInput.current.blur()
-  };
+  }), []);
 
-  const analyzeChatCommand = (msg) => {
+  const analyzeChatCommand = useCallback((msg) => {
     if (!msg || msg.charAt(0) !== "/") return false;
     const room = roomRef.current;
     const tokens = msg.substring(1).split(" ");
@@ -235,24 +235,24 @@ export default function Game({ roomRef, usingCustomAPI }) {
         chatApi.receiveNotice(`Unknown command: ${tokens[0]}`);
     }
     return true;
-  };
+  }, [API.Utils, chatApi, roomRef, setPlayerField]);
 
-  const inputKeyDown = (e) => {
+  const inputKeyDown = useCallback((e) => {
     if (e.code === "Enter" || e.code === "NumpadEnter") {
       if (inputValue.length > 0 && !analyzeChatCommand(inputValue)) {
         roomRef.current?.sendChat(inputValue);
       }
       setInputValue("");
     }
-  };
+  }, [analyzeChatCommand, inputValue, roomRef]);
 
-  const make2Digits = (a) => {
+  const make2Digits = useCallback((a) => {
     let s = String(a || "");
     while (s.length < 2) s = "0" + s;
     return s;
-  };
+  }, []);
 
-  const handleRec = () => {
+  const handleRec = useCallback(() => {
     if (!roomRef.current) return;
     if (roomRef.current.isRecording()) {
       const data = roomRef.current.stopRecording();
@@ -264,13 +264,39 @@ export default function Game({ roomRef, usingCustomAPI }) {
       roomRef.current.startRecording();
       setIsRecording(true);
     }
-  };
+  }, [make2Digits, roomRef]);
 
-  const handleLeave = () => setPopup(<LeaveRoomPopup room={roomRef.current} showPopup={setPopup} />);
-  const handleLink = () => setPopup(<RoomLinkPopup link={roomRef.current?.link} showPopup={setPopup} />);
-  const handleStadiumPick = () => setPopup(<StadiumPickPopup room={roomRef.current} showPopup={setPopup} />);
+  const handleLeave = useCallback(() => setPopup({
+    component: LeaveRoomPopup, 
+    props: {
+      room: roomRef.current,
+      showPopup: setPopup
+    }
+  }), [roomRef]);
+  const handleLink = useCallback(() => setPopup({
+    component: RoomLinkPopup,
+    props: {
+      link:roomRef.current?.link,
+      showPopup: setPopup
+    }
+  }), [roomRef]);
+  const handleStadiumPick = useCallback(() => setPopup({
+    component: StadiumPickPopup,
+    props: {
+      room:roomRef.current,
+      showPopup:setPopup
+    }
+  }), [roomRef]);
+  const handleSettings = useCallback(()=>setPopup({
+    component: SettingsPopup,
+    props: {
+      roomRef: roomRef?.current
+    }
 
-  const updateGameStateGUI = (gameState) => {
+  }), [roomRef]);
+
+  const handleMenu = useCallback(() => setShowRoomView(prev => !prev), []);
+  const updateGameStateGUI = useCallback((gameState) => {
     if (!gameState) return;
     const _redScore = gameState.redScore, _blueScore = gameState.blueScore;
     if (oldGUIValues.redScore !== _redScore || oldGUIValues.blueScore !== _blueScore) {
@@ -297,11 +323,13 @@ export default function Game({ roomRef, usingCustomAPI }) {
     if (oldGUIValues.m2 !== mm2) { setM2("" + mm2); oldGUIValues.m2 = mm2; }
     if (oldGUIValues.s1 !== ss1) { setS1("" + ss1); oldGUIValues.s1 = ss1; }
     setS2("" + ss2);
-  };
-
+  }, []);
+  
   useEffect(() => {
     const room = roomRef?.current;
-
+    const canvas = canvasRef.current;
+    if (!room || !canvas) return;
+    canvas.focus();
     setGameStarted(!!room.gameState);
     setPlayers([...room.players]);
     setRoomName(room.name);
@@ -312,59 +340,37 @@ export default function Game({ roomRef, usingCustomAPI }) {
     setTeamsLocked(room.state?.teamsLocked ?? true);
     setIsAdmin(room.currentPlayer.isAdmin);
     if (!room.gameState) setShowRoomView(true);
-
-    const s = new Sound();
+    const s = new Sound(player.sound.gain);
+    soundInstanceRef.current = s;
     soundRef.current = s;
     Promise.all([chatSnd, crowdSnd, goalSnd, highlightSnd, joinSnd, kickSnd, leaveSnd].map(url => s.loadSound(url)))
       .then(([chatB, crowdB, goalB, hiB, joinB, kickB, leaveB]) => {
         s.chat = chatB; s.crowd = crowdB; s.goal = goalB; s.highlight = hiB; s.join = joinB; s.kick = kickB; s.leave = leaveB;
       }).catch(err => { console.warn("sound load", err); });
 
-    room.mixConfig({
-      onAfterPingChange: (instantPing, avg, max) => setPing(`Ping: ${Math.round(instantPing)} - ${Math.round(max)}`),
-      onAfterStadiumChange: (stadium) => setStadiumName(stadium.name),
-      onAfterTeamGoal: () => { setRoomScore({ red: room.redScore, blue: room.blueScore }); s.playSound(s.goal); },
-      onAfterPlayerAdminChange: (id, admin) => { if (id === room.currentPlayerId) setIsAdmin(admin); },
-      onAfterPlayerTeamChange: () => setPlayers([...room.players]),
-      onAfterPlayerChat: (id, message) => {
-        const playerObj = room.state.players.find(x => x.id == id);
-        if (!playerObj) return;
-        chatApi.receiveChatMessage(playerObj.name, message);
-        s.playSound(s.chat);
-      },
-      onAfterPlayerJoin: () => { setPlayers([...room.players]); s.playSound(s.join); },
-      onAfterPlayerLeave: () => { setPlayers([...room.players]); s.playSound(s.leave); },
-      onAfterTeamsLockChange: (value) => setTeamsLocked(value),
-      onAfterGameStop: () => { setShowRoomView(true); setGameStarted(false); },
-      onAfterGameStart: () => { setShowRoomView(false); setGameStarted(true); },
-      onAfterAnnouncement: (msg, color, style, _sound) => {
-        chatApi.receiveAnnouncement(msg, color, style);
-        if (_sound === 1) s.playSound(s.chat);
-        if (_sound === 2) s.playSound(s.highlight);
-      },
-      onAfterPlayerBallKick: () => s.playSound(s.kick),
-      onAfterScoreLimitChange: (value) => setScoreLimit(value),
-      onAfterTimeLimitChange: (value) => setTimeLimit(value),
-      onRoomLink: (link) => {
-        console.log(link);
-      }
-    });
-
     const initRenderer = async () => {
       try {
         const imgs = await Promise.all([grass, concrete, concrete2, typing].map(loadImage));
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        var counter = 0;
         const defaultRendererObj = new defaultRenderer(API, {
           canvas,
           paintGame: true,
           images: { grass: imgs[0], concrete: imgs[1], concrete2: imgs[2], typing: imgs[3] },
-          onRequestAnimationFrame: () => updateGameStateGUI(room.gameState)
+          onRequestAnimationFrame: () => {
+            counter++;
+            if (counter>30){
+							counter=0;
+							updateGameStateGUI(room.gameState);
+						}
+          }
         });
+        const rendererOptions = ["discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators"]
+        for (let i = 0; i < rendererOptions.length; i++) {
+            defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
+        }
         room.setRenderer(defaultRendererObj);
         room.renderer.extrapolation = player.extrapolation;
         if (player.extrapolation != null) room.renderer.extrapolation = player.extrapolation;
-        setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi);
       } catch (err) {
         console.error("Renderer init error:", err);
       }
@@ -372,6 +378,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
     initRenderer();
 
     return () => {
+      API.Callback.remove('Wheel')
       try {
         // leave() will detach everything maybe
         room.leave();
@@ -380,20 +387,95 @@ export default function Game({ roomRef, usingCustomAPI }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const changeScoreLimit = (value) => {
+  useEffect(() => {
+    const room = roomRef?.current;
+    if (!room) return;
+    const s = soundRef.current;
+
+    room.onAfterStadiumChange = (stadium) => setStadiumName(stadium.name);
+    room.onAfterTeamGoal = () => {
+      setRoomScore({ red: room.redScore, blue: room.blueScore });
+      if (player.sound.main) s.playSound(s.goal);
+    };
+    room.onAfterPlayerAdminChange = (id, admin) => {
+      if (id === room.currentPlayerId) setIsAdmin(admin);
+    };
+    room.onAfterPlayerTeamChange = (id, teamId, byId) => {
+      setPlayers([...room.players]);
+      const moved = room.getPlayer(id);
+      const playerObj = room.getPlayer(byId);
+      const team = API.Impl.Core.Team.byId[teamId];
+      if (playerObj)
+        chatApi.receiveNotice(
+          `${moved.name} was moved to a team team by ${playerObj.name}`
+        );
+    };
+    room.onAfterPlayerChat = (id, message) => {
+      const playerObj = room.state.players.find((x) => x.id == id);
+      if (!playerObj) return;
+      chatApi.receiveChatMessage(playerObj.name, message);
+      if (player.sound.chat) s.playSound(s.chat);
+    };
+    room.onAfterPlayerJoin = (playerObj) => {
+      setPlayers([...room.players]);
+      if (player.sound.chat) s.playSound(s.join);
+      chatApi.receiveNotice(`${playerObj.name} has joined`);
+    };
+    room.onAfterPlayerLeave = (playerObj) => {
+      setPlayers([...room.players]);
+      if (player.sound.main) s.playSound(s.leave);
+      chatApi.receiveNotice(`${playerObj.name} has left`);
+    };
+    room.onAfterTeamsLockChange = (value) => setTeamsLocked(value);
+    room.onAfterGameStop = (byId) => {
+      setShowRoomView(true);
+      setGameStarted(false);
+      const playerObj = room.getPlayer(byId);
+      if (playerObj)
+        chatApi.receiveNotice(`Game stopped by ${playerObj.name}`)
+    };
+    room.onAfterGameStart = (byId) => {
+      setShowRoomView(false);
+      setGameStarted(true);
+      const playerObj = room.getPlayer(byId);
+      if (playerObj)
+        chatApi.receiveNotice(`Game started by ${playerObj.name}`)
+      else chatApi.receiveNotice(`Game started`)
+    };
+    room.onAfterAnnouncement = (msg, color, style, _sound) => {
+      chatApi.receiveAnnouncement(msg, color, style);
+      if (_sound === 1 && player.sound.chat) s.playSound(s.chat);
+      if (_sound === 2 && player.sound.chat) s.playSound(s.highlight);
+    };
+    room.onAfterPlayerBallKick = () => {
+      if (player.sound.main) s.playSound(s.kick);
+    };
+    room.onAfterScoreLimitChange = (value) => setScoreLimit(value);
+    room.onAfterTimeLimitChange = (value) => setTimeLimit(value);
+  }, [player, roomRef, soundRef]);
+
+  useEffect(() => {
+    const room = roomRef.current;
+    const canvas = canvasRef.current;
+    const chatInputEl = chatInput.current;
+    const keysHandler = setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi, player.keys, canvas, chatInputEl);
+    return () => { keysHandler.kill(); };
+  }, [chatApi, player, roomRef, canvasRef, chatInput]);
+
+  const changeScoreLimit = useCallback((value) => {
     setScoreLimit(value);
     roomRef.current?.setScoreLimit(value);
-  };
-  const changeTimeLimit = (value) => {
+  }, [roomRef]);
+  const changeTimeLimit = useCallback((value) => {
     setTimeLimit(value);
     roomRef.current?.setTimeLimit(value);
-  };
+  }, [roomRef]);
 
   return (
-    <div className="game-view" style={{ "--chat-opacity": `${player.chatOpacity}` }}>
+    <div tabIndex={-1} className="game-view" style={{ "--chat-opacity": `${player.chat.opacity}`}}>
       <div className="gameplay-section">
-        <div className="game-state-view" hidden={!gameStarted}>
-          <div className="bar-container">
+        <div className="game-state-view" style={{visibility: !gameStarted ? 'hidden' : 'visible'}}>
+          <div className="bar-container" style={{pointerEvents:'none'}}>
             <div className="bar">
               <div className="scoreboard">
                 <div className="teamicon red" />
@@ -417,7 +499,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
         </div>
       </div>
 
-      <div className="top-section" data-hook="top-section">
+      <div className="top-section" style={{zIndex: showRoomView ? 2 : 0}}>
         {showRoomView ? (
           <RoomHeader
             roomRef={roomRef}
@@ -440,16 +522,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
         ) : null}
       </div>
 
-      <div className="bottom-section">
-        <div className="stats-view-container">
-          <div className="stats-view">
-            <p data-hook="ping">{ping}</p>
-            <p data-hook="fps" />
-            <div className="graph">
-              <canvas />
-            </div>
-          </div>
-        </div>
+      <div tabIndex={-1} className="bottom-section" style={{zIndex:2, width:'50vw'}}>
 
         <ChatBox
           chatRows={chatRows}
@@ -457,27 +530,21 @@ export default function Game({ roomRef, usingCustomAPI }) {
           setInputValue={setInputValue}
           inputKeyDown={inputKeyDown}
           chatInputRef={chatInput}
+          height={player.chat.height}
+          player={player}
+          setPlayerField={setPlayerField}
+          roomRef={roomRef}
         />
 
         <div className="bottom-spacer" />
       </div>
 
-      <div className="buttons">
-        <div className="sound-button-container" data-hook="sound">
-          <div className="sound-slider" data-hook="sound-slider">
-            <div className="sound-slider-bar-bg" data-hook="sound-bar-bg">
-              <div className="sound-slider-bar" data-hook="sound-bar" style={{ top: '0%' }} />
-            </div>
-          </div>
-          <button data-hook="sound-btn"><i className="icon-volume-up" data-hook="sound-icon" /></button>
-        </div>
-        <button data-hook="menu" disabled={!gameStarted} onClick={() => setShowRoomView(prev => !prev)}><i className="icon-menu" />Menu<span className="tooltip">Toggle room menu [Escape]</span></button>
-        <button data-hook="settings"><i className="icon-cog" /></button>
+      <div className="buttons" style={{zIndex:2}}>
+        <SoundButton player={player} initialVolume={player.sound.gain} soundInstance={soundInstanceRef.current} setPlayerField={setPlayerField}></SoundButton>
+        <button data-hook="menu" disabled={!gameStarted} onClick={handleMenu}><i className="icon-menu" />Menu<span className="tooltip">Toggle room menu [Escape]</span></button>
+        <button data-hook="settings" onClick={handleSettings}><i className="icon-cog" /></button>
       </div>
-
-      <div data-hook="popups" style={{ display: popup ? 'flex' : 'none' }}>
-        {popup}
-      </div>
+      <Popup PopupComponent={popup?.component} closePopup={()=>setPopup(null)} popupComponentProps={popup?.props} ></Popup>
     </div>
   );
 }

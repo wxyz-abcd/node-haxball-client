@@ -97,11 +97,22 @@ export default function Recaptcha({ onSuccess }) {
     ifRef.current.setAttribute("nwfaketop", true);
   }, []);
   return (
-    <div style={{ width: "100%", height: "calc(98vh - 40px)" }}>
-      <iframe ref={ifRef} src="https://www.haxball.com/headlesstoken" /*nwdisable nwfaketop*/ style={{width: "100%", height: "100%", top: "-4em", visibility: "hidden", position: "absolute"}} onLoad={()=>{
+      <iframe style={{visibility: 'hidden', width: '100%', height: '100%'}} ref={ifRef} src="https://www.haxball.com/headlesstoken" /*nwdisable nwfaketop*/ onLoad={()=>{
         try{
+          ifRef.current.contentDocument.body.style.margin = 0;
           ifRef.current.contentDocument.body.children[1].children[1].remove() // <br/>
-          ifRef.current.contentDocument.body.children[1].children[1].style.visibility = "hidden"; // submit button
+          const submitButton = ifRef.current.contentDocument.body.children[1].children[1];
+          submitButton.style.visibility = "hidden"; // submit button
+          ifRef.current.contentDocument.body.children[0].remove(); // <h1/>
+          ifRef.current.contentDocument.body.children[0].style.position = 'relative'; // <form/>
+          ifRef.current.contentDocument.body.children[0].style.height = '100%';
+          ifRef.current.contentDocument.documentElement.style.overflow = 'hidden';
+          const gRecaptcha = ifRef.current.contentDocument.querySelector('.g-recaptcha');
+          gRecaptcha.style.position = 'absolute';
+          gRecaptcha.style.left = '50%';
+          gRecaptcha.style.top = '50%';
+          gRecaptcha.style.transform = 'translate(-50%, -50%)';
+          ifRef.current.style.overflow = 'hidden';
           ifRef.current.style.visibility = "visible";
           cbRef.current = ifRef.current.contentDocument.getElementsByClassName("g-recaptcha")[0].getElementsByTagName("iframe")[0].contentDocument.getElementsByClassName("recaptcha-checkbox")[0];
           var int;
@@ -109,17 +120,11 @@ export default function Recaptcha({ onSuccess }) {
             if (cbRef.current.classList.contains("recaptcha-checkbox-checked")){
               clearInterval(int);
               setTimeout(()=>{
-                ifRef.current.contentDocument.body.children[1].children[1].click();
+                submitButton.click();
               }, 100)
             }
           }, 100);
         }catch(e){}
       }}></iframe>
-      {/*<webview
-        ref={wvRef}
-        src="https://www.haxball.com/headlesstoken"
-        style={{ width: "100%", height: "100%" }}
-      />*/}
-    </div>
   );
 }

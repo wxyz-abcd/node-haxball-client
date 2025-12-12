@@ -13,6 +13,7 @@ export default function CreateSandbox() {
 
   useEffect(() => {
     const API = sandboxWrapper(window.API);
+    API.Callback.add("Wheel");
     API.Room.create({
       name: "sandbox", 
       password: null, 
@@ -44,6 +45,7 @@ export default function CreateSandbox() {
             room.setPlayerAdmin(id, true);
           }
         });
+        room.players[0].isAdmin = true;
         room.setPlayerAdmin(0, true);
         room.hostPing = 1987987987;
         room.setPlayerTeam(0, 1)
@@ -59,5 +61,5 @@ export default function CreateSandbox() {
 
   if (roomCreated) return <Game roomRef={roomRef} API={usingAPI} />;
 
-  return <>hello</>
+  return <></>
 }

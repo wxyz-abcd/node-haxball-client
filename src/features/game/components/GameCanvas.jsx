@@ -1,7 +1,7 @@
 import React from "react";
 
-export default function GameCanvas({ canvasRef }) {
+export default React.memo(function GameCanvas({ canvasRef }) {
   return (
-    <canvas className="canvas" ref={canvasRef} id="canvas"></canvas>
+    <canvas tabIndex={-1} className="canvas" ref={canvasRef} id="canvas"></canvas>
   );
-}
+});

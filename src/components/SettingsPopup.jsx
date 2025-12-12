@@ -4,13 +4,15 @@ import SoundContent from "./settingsTabs/SoundContent.jsx";
 import VideoContent from "./settingsTabs/VideoContent.jsx";
 import InputContent from "./settingsTabs/InputContent.jsx";
 import MiscContent from "./settingsTabs/MiscContent.jsx";
+import { useCallback } from "react";
 
-function SettingsPopup({onClose}) {
+function SettingsPopup({onClose, roomRef /*PlayerDataProvider*/}) {
   const { player, setPlayerField } = usePlayerData();
-  const [content, setContent] = useState(()=><SoundContent player={player} setPlayerField={setPlayerField} />)
-  const changeContent = (content) => {
-    setContent(content)
-  }
+  const setPlayerFieldCb = useCallback((field, value) => {
+    setPlayerField(field, value);
+  }, [setPlayerField]);
+
+  const [content, setContent] = useState(()=><SoundContent player={player} setPlayerField={setPlayerFieldCb} />)
 
   return (
     <div className="view-wrapper">
@@ -18,16 +20,16 @@ function SettingsPopup({onClose}) {
         <h1>Settings</h1>
         <button onClick={onClose} data-hook="close">Close</button>
         <div className="tabs">
-          <button onClick={() => changeContent(<SoundContent player={player} setPlayerField={setPlayerField} />)} data-hook="soundbtn" className="">
+          <button onClick={() => setContent(<SoundContent player={player} setPlayerField={setPlayerFieldCb} />)} data-hook="soundbtn" className="">
           Sound
           </button>
-          <button onClick={() => changeContent(<VideoContent player={player} setPlayerField={setPlayerField} />)} data-hook="videobtn" className="" >
+          <button onClick={() => setContent(<VideoContent player={player} setPlayerField={setPlayerFieldCb} roomRef={roomRef} />)} data-hook="videobtn" className="" >
           Video
           </button>
-          <button onClick={() => changeContent(<InputContent player={player} setPlayerField={setPlayerField} />)} data-hook="inputbtn" className="" >
+          <button onClick={() => setContent(<InputContent player={player} setPlayerField={setPlayerFieldCb} />)} data-hook="inputbtn" className="" >
           Input
           </button>
-          <button onClick={() => changeContent(<MiscContent player={player} setPlayerField={setPlayerField} />)} data-hook="miscbtn" className="" >
+          <button onClick={() => setContent(<MiscContent player={player} setPlayerField={setPlayerFieldCb} />)} data-hook="miscbtn" className="" >
           Misc
           </button>
         </div>

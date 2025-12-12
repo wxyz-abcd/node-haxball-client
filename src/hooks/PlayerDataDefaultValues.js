@@ -1,0 +1,35 @@
+export default {
+    name: null,
+    authKey: null,
+    geo: null,
+    avatar: null,
+    language: 'english',
+    extrapolation: 0,
+    chat: {
+      opacity: 0.8,
+      height: 200,
+    },
+    sound: {
+      chat: true,
+      crowd: true,
+      main: true,
+      highlight: true,
+      gain: 1,
+    },
+    renderer: {
+      webgpu: true,
+      discLineWidth: 4,
+      generalLineWidth: 3,
+      resolutionScale: 1,
+      showTeamColors: true,
+      showAvatars: true,
+      showChatIndicators: true,
+    },
+    keys: {
+      up: ["KeyW", "ArrowUp"],
+      down: ["KeyS", "ArrowDown"],
+      left: ["KeyA", "ArrowLeft"],
+      right: ["KeyD", "ArrowRight"],
+      kick: ["Space", "KeyX", "CtrlLeft"],
+    },
+}

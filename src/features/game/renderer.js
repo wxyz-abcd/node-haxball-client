@@ -231,7 +231,9 @@ export default function(API, params){
   function redrawDisc({gr, disc}){
     gr.clear();
     gr.circle(0, 0, disc.radius);
-    gr.setFillStyle(Utils.numberToColor(disc.color));
+    const transparent = (disc.color|0)==-1;
+    if (!transparent)
+      gr.setFillStyle(Utils.numberToColor(disc.color));
     gr.fill();
     gr.stroke();
   }
@@ -466,7 +468,7 @@ export default function(API, params){
         gr.rect(-discObj.radius, -discObj.radius, 2*discObj.radius, 2*discObj.radius);
       else
         gr.circle(0, 0, discObj.radius+10);
-      gr.fill({ color: Utils.numberToColor(discObj.color) });
+      gr.fill({ color: 0x000000, alpha: 0 });
       gr.stroke({
         color: 0x000000,
         width: thisRenderer.discLineWidth-2,
@@ -1038,6 +1040,8 @@ export default function(API, params){
 
   this.finalize = function(){
     stage?.destroy({children: true, texture: true, textureSource: true});
+    stage2?.destroy({children: true, texture: true, textureSource: true});
+    stage3?.destroy({children: true, texture: true, textureSource: true});
     rendererObj?.destroy({ removeView: false });
     scriptElem && document.body.removeChild(scriptElem);
     scriptElem = null;
@@ -1045,6 +1049,10 @@ export default function(API, params){
     stage = null;
     stage2 = null;
     stage3 = null;
+    texture1?.destroy(true);
+    texture2?.destroy(true);
+    texture3?.destroy(true);
+    texture4?.destroy(true);
     texture1 = null;
     texture2 = null;
     texture3 = null;

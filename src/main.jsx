@@ -3,12 +3,12 @@ import PlayerDataProvider from './hooks/PlayerDataProvider';
 import App from './App';
 import './assets/css/game.css';
 import './assets/css/fontello.css'
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
+  <HashRouter>
     <PlayerDataProvider>
       <App />
     </PlayerDataProvider>
-  </BrowserRouter>
+  </HashRouter>
 );

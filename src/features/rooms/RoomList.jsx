@@ -3,6 +3,8 @@ import PerfectScrollbar from "perfect-scrollbar";
 import { getRooms } from "./rooms.service.js";
 import { useNavigate } from "react-router-dom";
 import SettingsPopup from "../../components/SettingsPopup.jsx";
+import Popup from "../../components/Popup.jsx";
+import { usePlayerData } from "../../hooks/usePlayerData.jsx";
 
 const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
   const flagClass = "flagico " + "f-" + room.data.flag;
@@ -31,22 +33,26 @@ const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
 });
 
 function RoomList() {
+  const { player, setPlayerField } = usePlayerData();
   const [rooms, setRooms] = useState([]);
   const containerRef = useRef(null);
   const [roomSelected, setRoomSelected] = useState(null);
-  const [showComponent, setShowComponent] = useState(null);
+  const [popupComponent, setPopupComponent] = useState(null);
   const navigate = useNavigate();
   const join = useCallback((roomId) => navigate(`/JoinRoom/${roomId}`), [navigate]);
-  const handleRowClick = (roomId) => setRoomSelected(roomId);
-  const handleRowDoubleClick = (roomId) => join(roomId);
+  const closePopup = useCallback(()=>setPopupComponent(null), [setPopupComponent]);
+  const handleRowClick = useCallback((roomId) => setRoomSelected(roomId), [setRoomSelected]);
+  const handleRowDoubleClick = useCallback((roomId) => join(roomId), [join]);
   const handleJoinClick = useCallback(() => {
     join(roomSelected);
   }, [join, roomSelected]);
   const showCreateRoom = useCallback(() => navigate("/CreateRoom"), [navigate]);
-  const handleSettings = useCallback(() => setShowComponent(<SettingsPopup onClose={() => setShowComponent(null)} />), []);
+  const handleSettings = useCallback(() => setPopupComponent(()=>SettingsPopup), []);
   const refresh = useCallback(() => {
     setRooms([]);
-    getRooms().then(setRooms);
+    if (player.geo)
+      getRooms(player.geo).then(setRooms);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const goToNameForm = useCallback(() => navigate('/'), [navigate]);
   const goToHeadless = useCallback(() => navigate('/Headless'), [navigate]);
@@ -57,17 +63,24 @@ function RoomList() {
   }, [refresh]);
 
   useEffect(() => {
-    if (showComponent) return;
     const ps = new PerfectScrollbar(containerRef.current);
     return () => ps.destroy();
-  }, [showComponent]);
+  }, []);
 
-  return showComponent ? (
-    showComponent
-  ) : (
+  useEffect(() => {
+    if (!player.geo) {
+      window.API.Utils.getGeo().then(geo => {
+        setPlayerField('geo', geo);
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
     <div className="container flexRow">
       <div className="flexCol flexGrow">
         <div className="roomlist-view">
+          <Popup PopupComponent={popupComponent} closePopup={closePopup} />
           <div className="dialog">
             <h1>Room list</h1>
             <p>Tip: Join rooms near you to reduce lag.</p>
