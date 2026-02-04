@@ -1,5 +1,6 @@
 import FlagSelector from "./MiscComponents/FlagSelector";
 import LanguageSelector from "./MiscComponents/LanguageSelector";
+import AuthSetter from "./MiscComponents/AuthSetter";
 import { languageLoaders } from "../../utils/languageLoaders";
 import { usePlayerData } from "../../hooks/usePlayerData";
 
@@ -43,6 +44,7 @@ export default function MiscContent() {
     >
       <FlagSelector onSelect={selectedFlag} />
       <LanguageSelector onSelect={selectedLang} />
+      <AuthSetter></AuthSetter>
     </div>
   );
 }
