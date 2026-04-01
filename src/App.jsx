@@ -8,9 +8,11 @@ import CreateSandbox from "./features/rooms/CreateSandbox";
 import Headless from "./features/rooms/Headless";
 import { usePlayerData } from "./hooks/usePlayerData";
 import { languageLoaders } from "./utils/languageLoaders";
+import { useWindowSettings } from "./hooks/useWindowSettings";
 
 function App() {
   const { player } = usePlayerData();
+  useWindowSettings(player);
 useEffect(() => {
   const API = window.API;
   if (!API || !player?.language) return;

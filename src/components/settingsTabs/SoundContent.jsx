@@ -6,7 +6,7 @@ export default function SoundContent({ player, setPlayerField }) {
   const [playerCopy, setPlayerCopy] = useState(player);
 
   const changed = (field, value) => {
-    setPlayerField('chat', { ...player.sound, [field]: value });
+    setPlayerField('sound', { ...player.sound, [field]: value });
     setPlayerCopy(prev => ({ ...prev, sound: { ...prev.sound, [field]: value } }));
   };
 

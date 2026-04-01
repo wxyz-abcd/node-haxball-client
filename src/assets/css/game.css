@@ -1,4 +1,172 @@
-html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video {
+/* ═══════════════════════════════════════════════════
+   Theme CSS Variables
+   All colors are defined here as CSS custom properties.
+   These values are overridden at runtime by the
+   active theme via document.documentElement.style.
+   ═══════════════════════════════════════════════════ */
+:root {
+  /* ── Backgrounds ── */
+  --bg-primary: #1a2125;
+  --bg-primary-rgb: 26, 33, 37;
+  --bg-secondary: #111619;
+  --bg-body: #73885c;
+  --bg-body-color: #939e7f;
+  --bg-body-image: url("../images/bg.png");
+  --bg-hover: #2f3c43;
+  --bg-selected: #3a4952;
+  --bg-odd-row: #222c31;
+  --bg-header: #000;
+  --bg-restricted: #2e343c;
+  --bg-player-hover: #1b2328;
+
+  /* ── Buttons ── */
+  --btn-primary: #244967;
+  --btn-primary-hover: #2f5e85;
+  --btn-primary-active: #193449;
+  --btn-disabled: #3e3e3e;
+  --btn-danger: #c13535;
+  --btn-danger-hover: #cf5050;
+  --btn-danger-active: #a12c2c;
+  --btn-success: #3a9933;
+  --btn-success-hover: #46b83d;
+  --btn-success-active: #2e7a29;
+  --btn-cancel: #db2a2a;
+  --btn-cancel-hover: #e14d4d;
+  --btn-cancel-active: #bc2020;
+  --btn-info: #4444dd;
+  --btn-info-hover: #6767e3;
+  --btn-info-active: #2626d2;
+
+  /* ── Text ── */
+  --text-primary: #fff;
+  --text-secondary: #bfbfbf;
+  --text-link: #ffe7cc;
+  --text-admin: #ffdb72;
+  --text-notice: #8ed2ab;
+  --text-muted: #888;
+  --text-rec-active: #d33;
+  --text-dark: #000;
+
+  /* ── Team Colors ── */
+  --team-red: #e56e56;
+  --team-blue: #5689e5;
+  --team-red-text: #ff8686;
+  --team-blue-text: #b7b7ff;
+
+  /* ── Accents & Borders ── */
+  --border-accent: #c13535;
+  --border-input-focus: #244967;
+  --separator-color: gray;
+
+  /* ── Scrollbar ── */
+  --scrollbar-thumb: #445661;
+  --scrollbar-thumb-hover: #59717f;
+  --scrollbar-alt: #708b9b;
+
+  /* ── Slider ── */
+  --slider-thumb: #389cdb;
+  --slider-track: rgba(255, 255, 255, .3);
+
+  /* ── Sound ── */
+  --sound-slider-bar: #cad4da;
+  --sound-slider-bar-hover: #f7f9f9;
+
+  /* ── Autocomplete ── */
+  --autocomplete-bg: #fff;
+  --autocomplete-hover: #d1e2fe;
+  --autocomplete-selected: #b3c6ff;
+
+  /* ── Replay Timebar ── */
+  --timebar-bg: #393737;
+  --timebar-progress: #5c5c5c;
+  --timebar-marker: #cecece;
+
+  /* ── Game ── */
+  --game-popup-overlay: rgba(115, 136, 92, .5);
+  --overlay-dark: rgba(0, 0, 0, .7);
+}
+
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video {
     margin: 0;
     padding: 0;
     border: 0;
@@ -29,7 +197,10 @@ fieldset {
     border: 0
 }
 
-button,input,select,textarea {
+button,
+input,
+select,
+textarea {
     font-size: 100%;
     font-family: inherit;
     margin: 0;
@@ -38,7 +209,8 @@ button,input,select,textarea {
     vertical-align: middle
 }
 
-button,input {
+button,
+input {
     line-height: normal;
     overflow: visible
 }
@@ -65,12 +237,14 @@ input[type=search]::-webkit-search-decoration {
     outline: none
 }
 
-input[type=checkbox],input[type=radio] {
+input[type=checkbox],
+input[type=radio] {
     box-sizing: border-box;
     padding: 0
 }
 
-button::-moz-focus-inner,input::-moz-focus-inner {
+button::-moz-focus-inner,
+input::-moz-focus-inner {
     border: 0;
     padding: 0
 }
@@ -84,12 +258,14 @@ img {
     display: block
 }
 
-ol,ul {
+ol,
+ul {
     margin: 0;
     padding: 0
 }
 
-dl,dd {
+dl,
+dd {
     margin: 0
 }
 
@@ -100,7 +276,12 @@ li {
     list-style: none
 }
 
-h1,h2,h3,h4,h5,h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     font-weight: inherit;
     line-height: inherit;
     font-size: inherit;
@@ -149,12 +330,16 @@ address {
     font-style: normal
 }
 
-tt,code,kbd,samp {
+tt,
+code,
+kbd,
+samp {
     font-family: inherit;
     font-size: inherit
 }
 
-b,strong {
+b,
+strong {
     font-weight: inherit
 }
 
@@ -170,7 +355,8 @@ q {
     quotes: none
 }
 
-q:before,q:after {
+q:before,
+q:after {
     content: "";
     content: none
 }
@@ -181,7 +367,8 @@ a {
     text-decoration: none
 }
 
-a:hover,a:active {
+a:hover,
+a:active {
     outline: none
 }
 
@@ -189,7 +376,8 @@ a img {
     border: none
 }
 
-sub,sup {
+sub,
+sup {
     font-size: 75%;
     line-height: 0;
     position: relative
@@ -203,7 +391,17 @@ sub {
     bottom: -0.25em
 }
 
-article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section {
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
     display: block
 }
 
@@ -227,8 +425,8 @@ th {
 .ps__rail-x {
     display: none !important;
     opacity: 0;
-    transition: background-color .2s linear,opacity .2s linear;
-    -webkit-transition: background-color .2s linear,opacity .2s linear;
+    transition: background-color .2s linear, opacity .2s linear;
+    -webkit-transition: background-color .2s linear, opacity .2s linear;
     height: 15px;
     bottom: 0px;
     position: absolute
@@ -237,91 +435,130 @@ th {
 .ps__rail-y {
     display: none;
     opacity: 0;
-    transition: background-color .2s linear,opacity .2s linear;
-    -webkit-transition: background-color .2s linear,opacity .2s linear;
+    transition: background-color .2s linear, opacity .2s linear;
+    -webkit-transition: background-color .2s linear, opacity .2s linear;
     width: 15px;
     right: 0;
     position: absolute
 }
 
-.ps--active-x>.ps__rail-x,.ps--active-y>.ps__rail-y {
+.ps--active-x>.ps__rail-x,
+.ps--active-y>.ps__rail-y {
     display: block;
-    background-color: rgba(0,0,0,0)
+    background-color: rgba(0, 0, 0, 0)
 }
 
-.ps:hover>.ps__rail-x,.ps:hover>.ps__rail-y,.ps--focus>.ps__rail-x,.ps--focus>.ps__rail-y,.ps--scrolling-x>.ps__rail-x,.ps--scrolling-y>.ps__rail-y {
+.ps:hover>.ps__rail-x,
+.ps:hover>.ps__rail-y,
+.ps--focus>.ps__rail-x,
+.ps--focus>.ps__rail-y,
+.ps--scrolling-x>.ps__rail-x,
+.ps--scrolling-y>.ps__rail-y {
     opacity: 1
 }
 
-.ps__rail-x:hover,.ps__rail-y:hover,.ps__rail-x:focus,.ps__rail-y:focus {
-    background-color: rgba(0,0,0,0);
+.ps__rail-x:hover,
+.ps__rail-y:hover,
+.ps__rail-x:focus,
+.ps__rail-y:focus {
+    background-color: rgba(0, 0, 0, 0);
     opacity: 1
 }
 
 .ps__thumb-x {
     background-color: #aaa;
     border-radius: 6px;
-    transition: background-color .2s linear,height .2s ease-in-out;
-    -webkit-transition: background-color .2s linear,height .2s ease-in-out;
+    transition: background-color .2s linear, height .2s ease-in-out;
+    -webkit-transition: background-color .2s linear, height .2s ease-in-out;
     height: 6px;
     bottom: 2px;
     position: absolute
 }
 
 .ps__thumb-y {
-    background-color: #445661;
+    background-color: var(--scrollbar-thumb);
     border-radius: 6px;
-    transition: background-color .2s linear,width .2s ease-in-out;
-    -webkit-transition: background-color .2s linear,width .2s ease-in-out;
+    transition: background-color .2s linear, width .2s ease-in-out;
+    -webkit-transition: background-color .2s linear, width .2s ease-in-out;
     width: 6px;
     right: 2px;
     position: absolute
 }
 
 .ps__thumb-y:hover {
-    background-color: #59717f
+    background-color: var(--scrollbar-thumb-hover)
 }
 
-.ps__rail-x:hover>.ps__thumb-x,.ps__rail-x:focus>.ps__thumb-x {
+.ps__rail-x:hover>.ps__thumb-x,
+.ps__rail-x:focus>.ps__thumb-x {
     height: 11px
 }
 
-.ps__rail-y:hover>.ps__thumb-y,.ps__rail-y:focus>.ps__thumb-y {
+.ps__rail-y:hover>.ps__thumb-y,
+.ps__rail-y:focus>.ps__thumb-y {
     width: 11px
 }
 
 @supports(-ms-overflow-style: none) {
     .ps {
-        overflow:auto !important
+        overflow: auto !important
     }
 }
 
-@media screen and (-ms-high-contrast: active),(-ms-high-contrast: none) {
+@media screen and (-ms-high-contrast: active),
+(-ms-high-contrast: none) {
     .ps {
         overflow: auto !important
     }
 }
 
-.replay-controls-view button,.room-view button[data-hook=stop-btn],.room-view button[data-hook=start-btn],.room-view button,.game-view>.buttons button,.chatbox-view-contents>.input button,.dialog .file-btn label,.room-view>.container .file-btn label,.dialog button,.room-view>.container button,.disconnected-view button,.connecting-view button {
+.replay-controls-view button,
+.room-view button[data-hook=stop-btn],
+.room-view button[data-hook=start-btn],
+.room-view button,
+.game-view>.buttons button,
+.chatbox-view-contents>.input button,
+.dialog .file-btn label,
+.room-view>.container .file-btn label,
+.dialog button,
+.room-view>.container button,
+.disconnected-view button,
+.connecting-view button {
     position: relative;
     padding: 5px 15px;
     border: 0;
     border-radius: 5px;
-    color: #fff;
-    font-family: "Open Sans",sans-serif;
+    color: var(--text-primary);
+    font-family: "Open Sans", sans-serif;
     font-weight: 700;
     font-size: 15px;
     line-height: 100%
 }
 
-.replay-controls-view button:focus,.room-view button:focus,.game-view>.buttons button:focus,.chatbox-view-contents>.input button:focus,.dialog .file-btn label:focus,.room-view>.container .file-btn label:focus,.dialog button:focus,.disconnected-view button:focus,.connecting-view button:focus {
+.replay-controls-view button:focus,
+.room-view button:focus,
+.game-view>.buttons button:focus,
+.chatbox-view-contents>.input button:focus,
+.dialog .file-btn label:focus,
+.room-view>.container .file-btn label:focus,
+.dialog button:focus,
+.disconnected-view button:focus,
+.connecting-view button:focus {
     outline: none
 }
 
-.replay-controls-view button .tooltip,.room-view button .tooltip,.game-view>.buttons button .tooltip,.chatbox-view-contents>.input button .tooltip,.dialog .file-btn label .tooltip,.room-view>.container .file-btn label .tooltip,.dialog button .tooltip,.disconnected-view button .tooltip,.connecting-view button .tooltip {
+.replay-controls-view button .tooltip,
+.room-view button .tooltip,
+.game-view>.buttons button .tooltip,
+.chatbox-view-contents>.input button .tooltip,
+.dialog .file-btn label .tooltip,
+.room-view>.container .file-btn label .tooltip,
+.dialog button .tooltip,
+.disconnected-view button .tooltip,
+.connecting-view button .tooltip {
     visibility: hidden;
-    background-color: rgba(0,0,0,.8);
-    color: #fff;
+    background-color: rgba(0, 0, 0, .8);
+    color: var(--text-primary);
     text-align: center;
     padding: 6px 12px;
     border-radius: 6px;
@@ -334,7 +571,15 @@ th {
     transition: opacity 0s
 }
 
-.replay-controls-view button:hover .tooltip,.room-view button:hover .tooltip,.game-view>.buttons button:hover .tooltip,.chatbox-view-contents>.input button:hover .tooltip,.dialog .file-btn label:hover .tooltip,.room-view>.container .file-btn label:hover .tooltip,.dialog button:hover .tooltip,.disconnected-view button:hover .tooltip,.connecting-view button:hover .tooltip {
+.replay-controls-view button:hover .tooltip,
+.room-view button:hover .tooltip,
+.game-view>.buttons button:hover .tooltip,
+.chatbox-view-contents>.input button:hover .tooltip,
+.dialog .file-btn label:hover .tooltip,
+.room-view>.container .file-btn label:hover .tooltip,
+.dialog button:hover .tooltip,
+.disconnected-view button:hover .tooltip,
+.connecting-view button:hover .tooltip {
     visibility: visible;
     opacity: 1;
     transition: opacity .5s;
@@ -342,53 +587,56 @@ th {
 }
 
 .connecting-view button {
-    background-color: #db2a2a
+    background-color: var(--btn-cancel)
 }
 
 .connecting-view button:hover {
-    background-color: #e14d4d
+    background-color: var(--btn-cancel-hover)
 }
 
 .connecting-view button:active {
-    background-color: #bc2020
+    background-color: var(--btn-cancel-active)
 }
 
 .connecting-view button:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .disconnected-view button {
-    background-color: #44d
+    background-color: var(--btn-info)
 }
 
 .disconnected-view button:hover {
-    background-color: #6767e3
+    background-color: var(--btn-info-hover)
 }
 
 .disconnected-view button:active {
-    background-color: #2626d2
+    background-color: var(--btn-info-active)
 }
 
 .disconnected-view button:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
-.dialog input:not([type=range]),.room-view>.container input:not([type=range]) {
-    color: #fff;
-    background-color: #111619;
+.dialog input:not([type=range]),
+.room-view>.container input:not([type=range]) {
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
     border: none;
     border-radius: 5px;
     padding: 0 10px;
     box-sizing: border-box;
-    border: 1px solid #111619
+    border: 1px solid var(--bg-secondary)
 }
 
-.dialog input:focus:not([type=range]),.room-view>.container input:focus:not([type=range]) {
-    border-color: #244967
+.dialog input:focus:not([type=range]),
+.room-view>.container input:focus:not([type=range]) {
+    border-color: var(--border-input-focus)
 }
 
-.dialog,.room-view>.container {
-    background-color: #1a2125;
+.dialog,
+.room-view>.container {
+    background-color: var(--bg-primary);
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -398,108 +646,128 @@ th {
     border-radius: 5px
 }
 
-.dialog>h1,.room-view>.container>h1 {
+.dialog>h1,
+.room-view>.container>h1 {
     font-size: 20px;
     font-weight: 600;
     margin-bottom: 20px !important;
     padding-top: 6px;
     padding-bottom: 5px;
     border-bottom: 3px;
-    border-bottom-color: #c13535;
+    border-bottom-color: var(--border-accent);
     border-bottom-style: solid
 }
 
-.dialog>:not(:last-child),.room-view>.container>:not(:last-child) {
+.dialog>:not(:last-child),
+.room-view>.container>:not(:last-child) {
     margin-bottom: 6px
 }
 
-.dialog .row,.room-view>.container .row {
+.dialog .row,
+.room-view>.container .row {
     display: flex
 }
 
-.dialog .row>:not(:last-child),.room-view>.container .row>:not(:last-child) {
+.dialog .row>:not(:last-child),
+.room-view>.container .row>:not(:last-child) {
     margin-right: 6px
 }
 
-.dialog .row>*,.room-view>.container .row>* {
+.dialog .row>*,
+.room-view>.container .row>* {
     flex: 1
 }
 
-.dialog button,.room-view>.container button {
-    background-color: #244967
+.dialog button,
+.room-view>.container button {
+    background-color: var(--btn-primary)
 }
 
-.dialog button:hover,.room-view>.container button:hover {
-    background-color: #2f5e85
+.dialog button:hover,
+.room-view>.container button:hover {
+    background-color: var(--btn-primary-hover)
 }
 
-.dialog button:active,.room-view>.container button:active {
-    background-color: #193449
+.dialog button:active,
+.room-view>.container button:active {
+    background-color: var(--btn-primary-active)
 }
 
-.dialog button:disabled,.room-view>.container button:disabled {
-    background-color: #3e3e3e
+.dialog button:disabled,
+.room-view>.container button:disabled {
+    background-color: var(--btn-disabled)
 }
 
-.dialog input:not([type=range]),.room-view>.container input:not([type=range]) {
+.dialog input:not([type=range]),
+.room-view>.container input:not([type=range]) {
     min-width: 10px
 }
 
-.dialog .label-input,.room-view>.container .label-input {
+.dialog .label-input,
+.room-view>.container .label-input {
     display: flex;
-    background-color: #244967;
+    background-color: var(--btn-primary);
     align-items: baseline;
     border-radius: 5px;
     padding: 3px 3px 3px 5px
 }
 
-.dialog .label-input>*,.room-view>.container .label-input>* {
+.dialog .label-input>*,
+.room-view>.container .label-input>* {
     flex: 1
 }
 
-.dialog .label-input label,.room-view>.container .label-input label {
+.dialog .label-input label,
+.room-view>.container .label-input label {
     flex: 0 0 auto;
     margin-right: 10px
 }
 
-.dialog .file-btn input[type=file],.room-view>.container .file-btn input[type=file] {
+.dialog .file-btn input[type=file],
+.room-view>.container .file-btn input[type=file] {
     display: none
 }
 
-.dialog .file-btn label,.room-view>.container .file-btn label {
+.dialog .file-btn label,
+.room-view>.container .file-btn label {
     box-sizing: border-box;
     width: 100%;
     text-align: center;
-    background-color: #244967;
+    background-color: var(--btn-primary);
     display: inline-block;
     cursor: pointer
 }
 
-.dialog .file-btn label:hover,.room-view>.container .file-btn label:hover {
-    background-color: #2f5e85
+.dialog .file-btn label:hover,
+.room-view>.container .file-btn label:hover {
+    background-color: var(--btn-primary-hover)
 }
 
-.dialog .file-btn label:active,.room-view>.container .file-btn label:active {
-    background-color: #193449
+.dialog .file-btn label:active,
+.room-view>.container .file-btn label:active {
+    background-color: var(--btn-primary-active)
 }
 
-.dialog .file-btn label:disabled,.room-view>.container .file-btn label:disabled {
-    background-color: #3e3e3e
+.dialog .file-btn label:disabled,
+.room-view>.container .file-btn label:disabled {
+    background-color: var(--btn-disabled)
 }
 
-.dialog select,.room-view>.container select {
-    border: 1px solid #111619;
-    background-color: #111619;
+.dialog select,
+.room-view>.container select {
+    border: 1px solid var(--bg-secondary);
+    background-color: var(--bg-secondary);
     border-radius: 5px;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    color: #fff;
+    color: var(--text-primary);
     padding: 0px 5px
 }
 
-.dialog select:hover:not(:disabled),.room-view>.container select:hover:not(:disabled) {
-    border-color: #244967
+.dialog select:hover:not(:disabled),
+.room-view>.container select:hover:not(:disabled) {
+    border-color: var(--border-input-focus)
 }
 
 .basic-dialog .buttons {
@@ -530,7 +798,8 @@ th {
     align-items: center
 }
 
-.simple-dialog-view>.dialog,.room-view.simple-dialog-view>.container {
+.simple-dialog-view>.dialog,
+.room-view.simple-dialog-view>.container {
     min-width: 300px
 }
 
@@ -553,7 +822,7 @@ th {
 }
 
 .spinner>div {
-    background-color: #fff;
+    background-color: var(--text-primary);
     height: 100%;
     width: 6px;
     margin: 2px 2px;
@@ -577,7 +846,10 @@ th {
 }
 
 @keyframes sk-stretchdelay {
-    0%,40%,100% {
+
+    0%,
+    40%,
+    100% {
         transform: scaleY(0.4)
     }
 
@@ -1598,7 +1870,7 @@ th {
     display: flex;
     flex-direction: column;
     padding: 5px 10px 5px 10px;
-    background-color: rgba(26, 33, 37, var(--chat-opacity, 1));
+    background-color: rgba(var(--bg-primary-rgb), var(--chat-opacity, 1));
     border-top-left-radius: 5px;
     border-top-right-radius: 5px
 }
@@ -1618,7 +1890,7 @@ th {
 }
 
 .chatbox-view-contents>.drag:hover::before {
-    background-color: rgba(255,255,255,.5)
+    background-color: rgba(255, 255, 255, .5)
 }
 
 .chatbox-view-contents>.drag::after {
@@ -1638,7 +1910,7 @@ th {
     width: 20px;
     bottom: 0;
     border-radius: 10px;
-    background-color: rgba(255,255,255,.2)
+    background-color: rgba(255, 255, 255, .2)
 }
 
 .chatbox-view-contents>.log {
@@ -1661,7 +1933,7 @@ th {
 }
 
 .chatbox-view-contents>.log .log-contents p.notice {
-    color: #8ed2ab
+    color: var(--text-notice)
 }
 
 .chatbox-view-contents>.log .log-contents p.highlight {
@@ -1669,7 +1941,7 @@ th {
 }
 
 .chatbox-view-contents>.log .log-contents p.announcement {
-    border-left: 3px solid #c13535;
+    border-left: 3px solid var(--border-accent);
     padding-left: 5px;
     min-height: 12px;
     white-space: pre-wrap
@@ -1677,12 +1949,12 @@ th {
 
 .chatbox-view-contents>.autocompletebox {
     position: absolute;
-    background-color: #fff;
+    background-color: var(--autocomplete-bg);
     line-height: 25px;
-    color: #000;
+    color: var(--text-dark);
     bottom: 30px;
     left: 5px;
-    border: solid #000 1px;
+    border: solid var(--bg-header) 1px;
     overflow-y: auto;
     overflow-x: hidden;
     max-height: 200px
@@ -1694,11 +1966,11 @@ th {
 }
 
 .chatbox-view-contents>.autocompletebox>div:hover {
-    background-color: #d1e2fe
+    background-color: var(--autocomplete-hover)
 }
 
 .chatbox-view-contents>.autocompletebox>div.selected {
-    background-color: #b3c6ff
+    background-color: var(--autocomplete-selected)
 }
 
 .chatbox-view-contents>.input {
@@ -1709,8 +1981,8 @@ th {
 }
 
 .chatbox-view-contents>.input input[type=text] {
-    color: #fff;
-    background-color: #111619;
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
     border: none;
     border-radius: 5px;
     padding: 0 8px;
@@ -1725,19 +1997,19 @@ th {
 }
 
 .chatbox-view-contents>.input button {
-    background-color: #244967
+    background-color: var(--btn-primary)
 }
 
 .chatbox-view-contents>.input button:hover {
-    background-color: #2f5e85
+    background-color: var(--btn-primary-hover)
 }
 
 .chatbox-view-contents>.input button:active {
-    background-color: #193449
+    background-color: var(--btn-primary-active)
 }
 
 .chatbox-view-contents>.input button:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .replayer .chatbox-view {
@@ -1757,7 +2029,8 @@ th {
     align-items: center
 }
 
-.connecting-view .dialog,.connecting-view .room-view>.container {
+.connecting-view .dialog,
+.connecting-view .room-view>.container {
     height: 300px;
     width: 300px
 }
@@ -1784,11 +2057,13 @@ th {
     align-items: center
 }
 
-.disconnected-view .dialog,.disconnected-view .room-view>.container {
+.disconnected-view .dialog,
+.disconnected-view .room-view>.container {
     width: 300px
 }
 
-.disconnected-view .dialog>p,.disconnected-view .room-view>.container>p {
+.disconnected-view .dialog>p,
+.disconnected-view .room-view>.container>p {
     margin-bottom: 20px
 }
 
@@ -1816,7 +2091,7 @@ th {
 
 .game-view.chat-bg-full .bottom-section {
     align-items: flex-start;
-    background-color: rgba(26, 33, 37, var(--chat-opacity, 1))
+    background-color: rgba(var(--bg-primary-rgb), var(--chat-opacity, 1))
 }
 
 .game-view.chat-bg-full .bottom-section .chatbox-view {
@@ -1855,7 +2130,7 @@ th {
 
 .game-view>.buttons {
     white-space: nowrap;
-    background-color: #1a2125;
+    background-color: var(--bg-primary);
     border-bottom-left-radius: 5px;
     display: flex;
     flex-direction: row;
@@ -1868,21 +2143,21 @@ th {
 }
 
 .game-view>.buttons button {
-    background-color: #244967;
+    background-color: var(--btn-primary);
     padding-left: 8px;
     padding-right: 8px
 }
 
 .game-view>.buttons button:hover {
-    background-color: #2f5e85
+    background-color: var(--btn-primary-hover)
 }
 
 .game-view>.buttons button:active {
-    background-color: #193449
+    background-color: var(--btn-primary-active)
 }
 
 .game-view>.buttons button:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .game-view>.buttons>:not(:last-child) {
@@ -1901,7 +2176,7 @@ th {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(115,136,92,.5)
+    background-color: var(--game-popup-overlay)
 }
 
 .sound-button-container {
@@ -1912,7 +2187,7 @@ th {
 .sound-button-container .sound-slider {
     display: none;
     position: absolute;
-    background-color: #1a2125;
+    background-color: var(--bg-primary);
     top: 100%;
     left: 50%;
     transform: translate(-50%);
@@ -1921,16 +2196,17 @@ th {
 }
 
 .sound-button-container .sound-slider:hover .sound-slider-bar {
-    background-color: #f7f9f9
+    background-color: var(--sound-slider-bar-hover)
 }
 
-.sound-button-container:hover .sound-slider,.sound-button-container.dragging .sound-slider {
+.sound-button-container:hover .sound-slider,
+.sound-button-container.dragging .sound-slider {
     display: block
 }
 
 .sound-button-container .sound-slider-bar-bg {
     position: relative;
-    background-color: #59717f;
+    background-color: var(--scrollbar-thumb-hover);
     border-radius: 10px;
     overflow: hidden;
     width: 10px;
@@ -1939,7 +2215,7 @@ th {
 }
 
 .sound-button-container .sound-slider-bar {
-    background-color: #cad4da;
+    background-color: var(--sound-slider-bar);
     position: absolute;
     bottom: 0;
     left: 0;
@@ -1956,13 +2232,14 @@ th {
     align-items: center
 }
 
-.loader-view .dialog,.loader-view .room-view>.container {
+.loader-view .dialog,
+.loader-view .room-view>.container {
     width: 300px
 }
 
 .stats-view {
-    background-color: rgba(26,33,37,.3);
-    text-shadow: 1px 1px 1px #000,0px 1px 1px #000;
+    background-color: rgba(var(--bg-primary-rgb), .3);
+    text-shadow: 1px 1px 1px #000, 0px 1px 1px #000;
     padding: 4px;
     margin: 4px;
     white-space: nowrap;
@@ -2002,11 +2279,13 @@ th {
     margin-bottom: 20px
 }
 
-.choose-nickname-view>.dialog,.room-view.choose-nickname-view>.container {
+.choose-nickname-view>.dialog,
+.room-view.choose-nickname-view>.container {
     width: 300px
 }
 
-.choose-nickname-view>.dialog>[data-hook=ok],.room-view.choose-nickname-view>.container>[data-hook=ok] {
+.choose-nickname-view>.dialog>[data-hook=ok],
+.room-view.choose-nickname-view>.container>[data-hook=ok] {
     align-self: center;
     width: 100px
 }
@@ -2037,7 +2316,7 @@ th {
 
 @keyframes time-warn {
     from {
-        color: #fff
+        color: var(--text-primary)
     }
 
     to {
@@ -2075,10 +2354,10 @@ th {
     height: 35px;
     display: flex;
     justify-content: center;
-    background-color: #1a2125;
+    background-color: var(--bg-primary);
     padding: 5px;
     border-radius: 0 0 5px 5px;
-    font: 900 20px "Arial Black","Arial Bold",Gadget,sans-serif
+    font: 900 20px "Arial Black", "Arial Bold", Gadget, sans-serif
 }
 
 .game-state-view .bar>.scoreboard {
@@ -2100,11 +2379,11 @@ th {
 }
 
 .game-state-view .bar>.scoreboard .teamicon.blue {
-    background-color: #5689e5
+    background-color: var(--team-blue)
 }
 
 .game-state-view .bar>.scoreboard .teamicon.red {
-    background-color: #e56e56
+    background-color: var(--team-red)
 }
 
 .game-state-view canvas {
@@ -2123,7 +2402,7 @@ th {
 }
 
 .game-state-view.restricted {
-    background-color: #2e343c;
+    background-color: var(--bg-restricted);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2148,7 +2427,7 @@ th {
 .game-state-view .fps-limit-fix {
     animation: fps-limit-fix-a 1s alternate;
     animation-iteration-count: infinite;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     width: 1px;
     height: 1px;
     position: absolute
@@ -2205,12 +2484,12 @@ th {
 
 .room-view>.container>.header-btns [data-hook=rec-btn] i {
     font-size: 75%;
-    color: #888;
+    color: var(--text-muted);
     margin-right: 4px
 }
 
 .room-view>.container>.header-btns [data-hook=rec-btn].active i {
-    color: #d33
+    color: var(--text-rec-active)
 }
 
 .room-view>.container>.teams {
@@ -2267,13 +2546,13 @@ th {
 
 .room-view>.container>.teams .player-list-view .list {
     flex: 1;
-    background-color: #111619;
+    background-color: var(--bg-secondary);
     overflow-x: hidden;
     overflow-y: auto
 }
 
 .room-view>.container>.teams .player-list-view.t-red button[data-hook=join-btn] {
-    color: #ff8686
+    color: var(--team-red-text)
 }
 
 .room-view>.container>.teams .player-list-view.t-red button[data-hook=reset-btn] {
@@ -2289,7 +2568,7 @@ th {
 }
 
 .room-view>.container>.teams .player-list-view.t-blue button[data-hook=join-btn] {
-    color: #b7b7ff
+    color: var(--team-blue-text)
 }
 
 .room-view>.container>.teams .player-list-view.t-blue button[data-hook=reset-btn] {
@@ -2329,7 +2608,7 @@ th {
 }
 
 .room-view>.container>.settings [data-hook=stadium-name].custom {
-    color: #ffdb72
+    color: var(--text-admin)
 }
 
 .room-view>.container>.controls {
@@ -2354,7 +2633,7 @@ th {
 }
 
 .room-view .player-list-item.admin [data-hook=name] {
-    color: #ffdb72
+    color: var(--text-admin)
 }
 
 .room-view .player-list-item .flagico {
@@ -2375,55 +2654,55 @@ th {
 }
 
 .room-view .player-list-item:hover {
-    background-color: #1b2328
+    background-color: var(--bg-player-hover)
 }
 
 .room-view button {
-    background-color: #244967
+    background-color: var(--btn-primary)
 }
 
 .room-view button:hover {
-    background-color: #2f5e85
+    background-color: var(--btn-primary-hover)
 }
 
 .room-view button:active {
-    background-color: #193449
+    background-color: var(--btn-primary-active)
 }
 
 .room-view button:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .room-view button[data-hook=start-btn] {
-    background-color: #3a9933
+    background-color: var(--btn-success)
 }
 
 .room-view button[data-hook=start-btn]:hover {
-    background-color: #46b83d
+    background-color: var(--btn-success-hover)
 }
 
 .room-view button[data-hook=start-btn]:active {
-    background-color: #2e7a29
+    background-color: var(--btn-success-active)
 }
 
 .room-view button[data-hook=start-btn]:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .room-view button[data-hook=stop-btn] {
-    background-color: #c13535
+    background-color: var(--btn-danger)
 }
 
 .room-view button[data-hook=stop-btn]:hover {
-    background-color: #cf5050
+    background-color: var(--btn-danger-hover)
 }
 
 .room-view button[data-hook=stop-btn]:active {
-    background-color: #a12c2c
+    background-color: var(--btn-danger-active)
 }
 
 .room-view button[data-hook=stop-btn]:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .room-view:not(.admin) .admin-only {
@@ -2447,14 +2726,16 @@ th {
     align-items: center
 }
 
-.create-room-view>.dialog,.room-view.create-room-view>.container {
+.create-room-view>.dialog,
+.room-view.create-room-view>.container {
     position: relative;
     min-height: 0;
     max-width: 350px;
     width: 100%
 }
 
-.create-room-view>.dialog>.label-input>label,.room-view.create-room-view>.container>.label-input>label {
+.create-room-view>.dialog>.label-input>label,
+.room-view.create-room-view>.container>.label-input>label {
     flex: 0 0 100px
 }
 
@@ -2467,19 +2748,23 @@ th {
     align-items: center
 }
 
-.room-password-view>.dialog,.room-view.room-password-view>.container {
+.room-password-view>.dialog,
+.room-view.room-password-view>.container {
     width: 300px
 }
 
-.room-password-view>.dialog .buttons,.room-view.room-password-view>.container .buttons {
+.room-password-view>.dialog .buttons,
+.room-view.room-password-view>.container .buttons {
     display: flex
 }
 
-.room-password-view>.dialog .buttons>:not(:last-child),.room-view.room-password-view>.container .buttons>:not(:last-child) {
+.room-password-view>.dialog .buttons>:not(:last-child),
+.room-view.room-password-view>.container .buttons>:not(:last-child) {
     margin-right: 6px
 }
 
-.room-password-view>.dialog .buttons>*,.room-view.room-password-view>.container .buttons>* {
+.room-password-view>.dialog .buttons>*,
+.room-view.room-password-view>.container .buttons>* {
     flex: 1;
     white-space: nowrap
 }
@@ -2497,7 +2782,7 @@ th {
 
 .roomlist-view>.notice {
     position: relative;
-    background-color: #1a2125;
+    background-color: var(--bg-primary);
     padding: 10px;
     box-sizing: border-box;
     border-radius: 5px;
@@ -2518,7 +2803,8 @@ th {
     margin-right: 20px
 }
 
-.roomlist-view>.dialog,.room-view.roomlist-view>.container {
+.roomlist-view>.dialog,
+.room-view.roomlist-view>.container {
     position: relative;
     min-height: 0;
     max-width: 650px;
@@ -2527,13 +2813,15 @@ th {
     width: 100%
 }
 
-.roomlist-view>.dialog [data-hook=count],.room-view.roomlist-view>.container [data-hook=count] {
+.roomlist-view>.dialog [data-hook=count],
+.room-view.roomlist-view>.container [data-hook=count] {
     position: absolute;
     top: 20px;
     right: 12px
 }
 
-.roomlist-view>.dialog>.splitter,.room-view.roomlist-view>.container>.splitter {
+.roomlist-view>.dialog>.splitter,
+.room-view.roomlist-view>.container>.splitter {
     min-height: 0;
     display: flex;
     flex-direction: row;
@@ -2541,60 +2829,72 @@ th {
     flex: 1
 }
 
-.roomlist-view>.dialog>.splitter>:not(:last-child),.room-view.roomlist-view>.container>.splitter>:not(:last-child) {
+.roomlist-view>.dialog>.splitter>:not(:last-child),
+.room-view.roomlist-view>.container>.splitter>:not(:last-child) {
     margin-right: 6px
 }
 
-.roomlist-view>.dialog>.splitter>.buttons,.room-view.roomlist-view>.container>.splitter>.buttons {
+.roomlist-view>.dialog>.splitter>.buttons,
+.room-view.roomlist-view>.container>.splitter>.buttons {
     display: flex;
     flex-direction: column;
     flex: 0 0 auto;
     align-items: stretch
 }
 
-.roomlist-view>.dialog>.splitter>.buttons>:not(:last-child),.room-view.roomlist-view>.container>.splitter>.buttons>:not(:last-child) {
+.roomlist-view>.dialog>.splitter>.buttons>:not(:last-child),
+.room-view.roomlist-view>.container>.splitter>.buttons>:not(:last-child) {
     margin-bottom: 6px
 }
 
-.roomlist-view>.dialog>.splitter>.buttons>button,.room-view.roomlist-view>.container>.splitter>.buttons>button {
+.roomlist-view>.dialog>.splitter>.buttons>button,
+.room-view.roomlist-view>.container>.splitter>.buttons>button {
     padding-left: 10px;
     display: flex
 }
 
-.roomlist-view>.dialog>.splitter>.buttons>button>div,.room-view.roomlist-view>.container>.splitter>.buttons>button>div {
+.roomlist-view>.dialog>.splitter>.buttons>button>div,
+.room-view.roomlist-view>.container>.splitter>.buttons>button>div {
     flex: 1
 }
 
-.roomlist-view>.dialog>.splitter>.buttons>.file-btn>label,.room-view.roomlist-view>.container>.splitter>.buttons>.file-btn>label {
+.roomlist-view>.dialog>.splitter>.buttons>.file-btn>label,
+.room-view.roomlist-view>.container>.splitter>.buttons>.file-btn>label {
     padding-left: 10px;
     display: flex
 }
 
-.roomlist-view>.dialog>.splitter>.buttons>.file-btn>label>div,.room-view.roomlist-view>.container>.splitter>.buttons>.file-btn>label>div {
+.roomlist-view>.dialog>.splitter>.buttons>.file-btn>label>div,
+.room-view.roomlist-view>.container>.splitter>.buttons>.file-btn>label>div {
     flex: 1
 }
 
-.roomlist-view>.dialog>.splitter>.buttons>.spacer,.room-view.roomlist-view>.container>.splitter>.buttons>.spacer {
+.roomlist-view>.dialog>.splitter>.buttons>.spacer,
+.room-view.roomlist-view>.container>.splitter>.buttons>.spacer {
     flex: 1;
     margin-bottom: 0px
 }
 
-.roomlist-view>.dialog>.splitter .filters,.room-view.roomlist-view>.container>.splitter .filters {
+.roomlist-view>.dialog>.splitter .filters,
+.room-view.roomlist-view>.container>.splitter .filters {
     margin-top: 16px
 }
 
-.roomlist-view>.dialog>.splitter .filters .bool,.room-view.roomlist-view>.container>.splitter .filters .bool {
+.roomlist-view>.dialog>.splitter .filters .bool,
+.room-view.roomlist-view>.container>.splitter .filters .bool {
     margin-right: 6px;
     padding: 0px 6px;
-    background-color: #2f3c43;
+    background-color: var(--bg-hover);
     border-radius: 5px
 }
 
-.roomlist-view>.dialog>.splitter .filters .bool:hover,.room-view.roomlist-view>.container>.splitter .filters .bool:hover {
-    background-color: #3a4952
+.roomlist-view>.dialog>.splitter .filters .bool:hover,
+.room-view.roomlist-view>.container>.splitter .filters .bool:hover {
+    background-color: var(--bg-selected)
 }
 
-.roomlist-view>.dialog>.splitter>.list,.room-view.roomlist-view>.container>.splitter>.list {
+.roomlist-view>.dialog>.splitter>.list,
+.room-view.roomlist-view>.container>.splitter>.list {
     -webkit-user-select: none;
     user-select: none;
     cursor: default;
@@ -2603,62 +2903,76 @@ th {
     flex-direction: column
 }
 
-.roomlist-view>.dialog>.splitter>.list col:nth-child(1),.room-view.roomlist-view>.container>.splitter>.list col:nth-child(1) {
+.roomlist-view>.dialog>.splitter>.list col:nth-child(1),
+.room-view.roomlist-view>.container>.splitter>.list col:nth-child(1) {
     width: 100%
 }
 
-.roomlist-view>.dialog>.splitter>.list col:nth-child(2),.room-view.roomlist-view>.container>.splitter>.list col:nth-child(2) {
+.roomlist-view>.dialog>.splitter>.list col:nth-child(2),
+.room-view.roomlist-view>.container>.splitter>.list col:nth-child(2) {
     width: 60px
 }
 
-.roomlist-view>.dialog>.splitter>.list col:nth-child(3),.room-view.roomlist-view>.container>.splitter>.list col:nth-child(3) {
+.roomlist-view>.dialog>.splitter>.list col:nth-child(3),
+.room-view.roomlist-view>.container>.splitter>.list col:nth-child(3) {
     width: 40px
 }
 
-.roomlist-view>.dialog>.splitter>.list col:nth-child(4),.room-view.roomlist-view>.container>.splitter>.list col:nth-child(4) {
+.roomlist-view>.dialog>.splitter>.list col:nth-child(4),
+.room-view.roomlist-view>.container>.splitter>.list col:nth-child(4) {
     width: 95px
 }
 
-.roomlist-view>.dialog>.splitter>.list td,.room-view.roomlist-view>.container>.splitter>.list td {
+.roomlist-view>.dialog>.splitter>.list td,
+.room-view.roomlist-view>.container>.splitter>.list td {
     white-space: nowrap;
     overflow: hidden
 }
 
-.roomlist-view>.dialog>.splitter>.list td:not(:first-child),.room-view.roomlist-view>.container>.splitter>.list td:not(:first-child) {
+.roomlist-view>.dialog>.splitter>.list td:not(:first-child),
+.room-view.roomlist-view>.container>.splitter>.list td:not(:first-child) {
     padding-left: 6px
 }
 
-.roomlist-view>.dialog>.splitter>.list thead,.room-view.roomlist-view>.container>.splitter>.list thead {
+.roomlist-view>.dialog>.splitter>.list thead,
+.room-view.roomlist-view>.container>.splitter>.list thead {
     line-height: 25px
 }
 
-.roomlist-view>.dialog>.splitter>.list .separator,.room-view.roomlist-view>.container>.splitter>.list .separator {
+.roomlist-view>.dialog>.splitter>.list .separator,
+.room-view.roomlist-view>.container>.splitter>.list .separator {
     height: 2px;
     width: 100%;
-    background-color: gray
+    background-color: var(--separator-color)
 }
 
-.roomlist-view>.dialog>.splitter>.list tbody tr,.room-view.roomlist-view>.container>.splitter>.list tbody tr {
+.roomlist-view>.dialog>.splitter>.list tbody tr,
+.room-view.roomlist-view>.container>.splitter>.list tbody tr {
     line-height: 22px
 }
 
-.roomlist-view>.dialog>.splitter>.list tbody tr.old,.room-view.roomlist-view>.container>.splitter>.list tbody tr.old {
-    color: #bfbfbf
+.roomlist-view>.dialog>.splitter>.list tbody tr.old,
+.room-view.roomlist-view>.container>.splitter>.list tbody tr.old {
+    color: var(--text-secondary)
 }
 
-.roomlist-view>.dialog>.splitter>.list tbody tr:hover,.room-view.roomlist-view>.container>.splitter>.list tbody tr:hover {
-    background-color: #2f3c43
+.roomlist-view>.dialog>.splitter>.list tbody tr:hover,
+.room-view.roomlist-view>.container>.splitter>.list tbody tr:hover {
+    background-color: var(--bg-hover)
 }
 
-.roomlist-view>.dialog>.splitter>.list tbody tr.selected,.room-view.roomlist-view>.container>.splitter>.list tbody tr.selected {
-    background-color: #3a4952
+.roomlist-view>.dialog>.splitter>.list tbody tr.selected,
+.room-view.roomlist-view>.container>.splitter>.list tbody tr.selected {
+    background-color: var(--bg-selected)
 }
 
-.roomlist-view>.dialog>.splitter>.list tbody .flagico,.room-view.roomlist-view>.container>.splitter>.list tbody .flagico {
+.roomlist-view>.dialog>.splitter>.list tbody .flagico,
+.room-view.roomlist-view>.container>.splitter>.list tbody .flagico {
     margin-right: 2px
 }
 
-.roomlist-view>.dialog>.splitter>.list tbody .flashtag,.room-view.roomlist-view>.container>.splitter>.list tbody .flashtag {
+.roomlist-view>.dialog>.splitter>.list tbody .flashtag,
+.room-view.roomlist-view>.container>.splitter>.list tbody .flashtag {
     display: inline-block;
     padding: 0px 4px;
     background-color: #900;
@@ -2667,30 +2981,35 @@ th {
     line-height: 14px
 }
 
-.roomlist-view>.dialog>.splitter>.list table,.room-view.roomlist-view>.container>.splitter>.list table {
+.roomlist-view>.dialog>.splitter>.list table,
+.room-view.roomlist-view>.container>.splitter>.list table {
     table-layout: fixed
 }
 
-.roomlist-view>.dialog>.splitter>.list table.header,.room-view.roomlist-view>.container>.splitter>.list table.header {
+.roomlist-view>.dialog>.splitter>.list table.header,
+.room-view.roomlist-view>.container>.splitter>.list table.header {
     width: calc(100% - 12px);
     margin-right: 15px;
     flex: 0;
-    background-color: #1a2125
+    background-color: var(--bg-primary)
 }
 
-.roomlist-view>.dialog>.splitter>.list .content,.room-view.roomlist-view>.container>.splitter>.list .content {
+.roomlist-view>.dialog>.splitter>.list .content,
+.room-view.roomlist-view>.container>.splitter>.list .content {
     position: relative;
     overflow: hidden;
     flex: 1
 }
 
-.roomlist-view>.dialog>.splitter>.list .content table,.room-view.roomlist-view>.container>.splitter>.list .content table {
+.roomlist-view>.dialog>.splitter>.list .content table,
+.room-view.roomlist-view>.container>.splitter>.list .content table {
     margin-top: 5px;
     width: calc(100% - 12px)
 }
 
-.roomlist-view>.dialog>.splitter>.list .simplebar-scrollbar,.room-view.roomlist-view>.container>.splitter>.list .simplebar-scrollbar {
-    background-color: #708b9b
+.roomlist-view>.dialog>.splitter>.list .simplebar-scrollbar,
+.room-view.roomlist-view>.container>.splitter>.list .simplebar-scrollbar {
+    background-color: var(--scrollbar-alt)
 }
 
 .pick-stadium-view {
@@ -2724,15 +3043,15 @@ th {
 }
 
 .pick-stadium-view .list>.elem:hover {
-    background-color: #2f3c43
+    background-color: var(--bg-hover)
 }
 
 .pick-stadium-view .list>.elem.selected {
-    background-color: #3a4952
+    background-color: var(--bg-selected)
 }
 
 .pick-stadium-view .list>.elem.custom {
-    color: #ffdb72
+    color: var(--text-admin)
 }
 
 .pick-stadium-view .buttons {
@@ -2760,35 +3079,42 @@ th {
     align-items: center
 }
 
-.unsupported-browser-view>.dialog,.room-view.unsupported-browser-view>.container {
+.unsupported-browser-view>.dialog,
+.room-view.unsupported-browser-view>.container {
     width: 400px
 }
 
-.unsupported-browser-view>.dialog>h2,.room-view.unsupported-browser-view>.container>h2 {
+.unsupported-browser-view>.dialog>h2,
+.room-view.unsupported-browser-view>.container>h2 {
     font-size: 1.1em;
     margin-top: 20px
 }
 
-.unsupported-browser-view>.dialog p,.room-view.unsupported-browser-view>.container p {
+.unsupported-browser-view>.dialog p,
+.room-view.unsupported-browser-view>.container p {
     line-height: 1.4em
 }
 
-.unsupported-browser-view>.dialog a,.room-view.unsupported-browser-view>.container a {
+.unsupported-browser-view>.dialog a,
+.room-view.unsupported-browser-view>.container a {
     line-height: 16px
 }
 
-.unsupported-browser-view>.dialog a img,.room-view.unsupported-browser-view>.container a img {
+.unsupported-browser-view>.dialog a img,
+.room-view.unsupported-browser-view>.container a img {
     display: inline-block;
     position: relative;
     top: 3px;
     margin-right: 6px
 }
 
-.unsupported-browser-view>.dialog a:hover,.room-view.unsupported-browser-view>.container a:hover {
+.unsupported-browser-view>.dialog a:hover,
+.room-view.unsupported-browser-view>.container a:hover {
     text-decoration: underline
 }
 
-.unsupported-browser-view>.dialog button,.room-view.unsupported-browser-view>.container button {
+.unsupported-browser-view>.dialog button,
+.room-view.unsupported-browser-view>.container button {
     margin-top: 20px
 }
 
@@ -2820,7 +3146,7 @@ th {
     display: none;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0,0,0,.7);
+    background-color: var(--overlay-dark);
     font-weight: bold;
     z-index: 1
 }
@@ -2852,7 +3178,7 @@ th {
 }
 
 .settings-view .tabs .selected {
-    background-color: #2f5e85
+    background-color: var(--btn-primary-hover)
 }
 
 .settings-view .option-row {
@@ -2886,22 +3212,22 @@ th {
 }
 
 .settings-view .section .toggle:hover {
-    background-color: #2f3c43
+    background-color: var(--bg-hover)
 }
 
 .settings-view .section select {
     height: 25px;
     border: none;
-    background-color: #244967;
+    background-color: var(--btn-primary);
     margin-left: 10px
 }
 
 .settings-view .section select:hover {
-    background-color: #2f5e85
+    background-color: var(--btn-primary-hover)
 }
 
 .settings-view .section select option {
-    background-color: #1a2125
+    background-color: var(--bg-primary)
 }
 
 .settings-view .section .loc {
@@ -2919,7 +3245,7 @@ th {
 }
 
 .settings-view .section .inputrow:nth-child(odd) {
-    background-color: #222c31
+    background-color: var(--bg-odd-row)
 }
 
 .settings-view .section .inputrow>:first-child {
@@ -2930,7 +3256,7 @@ th {
 }
 
 .settings-view .section .inputrow>:not(:first-child) {
-    background-color: #2f3c43;
+    background-color: var(--bg-hover);
     border-radius: 7px;
     margin: 2px 2px;
     padding: 0px 5px;
@@ -2938,7 +3264,7 @@ th {
 }
 
 .settings-view .section .inputrow>:not(:first-child):hover {
-    background-color: #3a4952
+    background-color: var(--bg-selected)
 }
 
 .settings-view .section .inputrow>:not(:first-child):hover .icon-cancel {
@@ -2987,11 +3313,11 @@ th {
 }
 
 .change-location-view .list>.elem:hover {
-    background-color: #2f3c43
+    background-color: var(--bg-hover)
 }
 
 .change-location-view .list>.elem.selected {
-    background-color: #3a4952
+    background-color: var(--bg-selected)
 }
 
 .change-location-view .buttons {
@@ -3017,7 +3343,7 @@ th {
     bottom: 0;
     height: 40px;
     width: 100%;
-    background-color: #000;
+    background-color: var(--bg-header);
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -3032,19 +3358,19 @@ th {
 }
 
 .replay-controls-view button {
-    background-color: #244967
+    background-color: var(--btn-primary)
 }
 
 .replay-controls-view button:hover {
-    background-color: #2f5e85
+    background-color: var(--btn-primary-hover)
 }
 
 .replay-controls-view button:active {
-    background-color: #193449
+    background-color: var(--btn-primary-active)
 }
 
 .replay-controls-view button:disabled {
-    background-color: #3e3e3e
+    background-color: var(--btn-disabled)
 }
 
 .replay-controls-view [data-hook=spd] {
@@ -3058,7 +3384,7 @@ th {
 }
 
 .replay-controls-view .timebar {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     flex-grow: 1;
     position: relative;
     height: 40px;
@@ -3070,13 +3396,13 @@ th {
     height: 6px;
     width: 100%;
     margin: auto;
-    background-color: #393737;
+    background-color: var(--timebar-bg);
     top: 0;
     bottom: 0
 }
 
 .replay-controls-view .timebar .bar {
-    background-color: #5c5c5c;
+    background-color: var(--timebar-progress);
     position: absolute;
     left: 0;
     top: 0;
@@ -3086,7 +3412,7 @@ th {
 .replay-controls-view .timebar .timetooltip {
     position: absolute;
     width: 60px;
-    background-color: #000;
+    background-color: var(--bg-header);
     top: -20px;
     text-align: center;
     line-height: 30px;
@@ -3104,15 +3430,15 @@ th {
     top: 0;
     bottom: 0;
     margin: auto;
-    background-color: #cecece
+    background-color: var(--timebar-marker)
 }
 
 .replay-controls-view .timebar .marker.k1 {
-    background-color: #5689e5
+    background-color: var(--team-blue)
 }
 
 .replay-controls-view .timebar .marker.k2 {
-    background-color: #e56e56
+    background-color: var(--team-red)
 }
 
 html {
@@ -3120,15 +3446,15 @@ html {
 }
 
 body {
-    font-family: "Open Sans",sans-serif;
+    font-family: "Open Sans", sans-serif;
     font-size: 14px;
-    color: #fff;
-    background-color: #73885c;
-    background: #939e7f url("../images/bg.png") fixed
+    color: var(--text-primary);
+    background-color: var(--bg-body);
+    background: var(--bg-body-color) var(--bg-body-image) fixed
 }
 
 a {
-    color: #ffe7cc
+    color: var(--text-link)
 }
 
 a:hover {
@@ -3139,7 +3465,7 @@ a:hover {
 #header {
     height: 40px;
     line-height: 40px;
-    background-color: #000;
+    background-color: var(--bg-header);
     padding-left: 20px
 }
 
@@ -3149,38 +3475,41 @@ a:hover {
     display: inline
 }
 
-.thin-scrollbar,.subtle-thin-scrollbar {
+.thin-scrollbar,
+.subtle-thin-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,.2) rgba(0,0,0,.2)
+    scrollbar-color: rgba(255, 255, 255, .2) rgba(0, 0, 0, .2)
 }
 
-.thin-scrollbar::-webkit-scrollbar,.subtle-thin-scrollbar::-webkit-scrollbar {
+.thin-scrollbar::-webkit-scrollbar,
+.subtle-thin-scrollbar::-webkit-scrollbar {
     width: 5px;
     height: 8px;
-    background-color: rgba(0,0,0,.2)
+    background-color: rgba(0, 0, 0, .2)
 }
 
-.thin-scrollbar::-webkit-scrollbar-thumb,.subtle-thin-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,.2)
+.thin-scrollbar::-webkit-scrollbar-thumb,
+.subtle-thin-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, .2)
 }
 
 .subtle-thin-scrollbar:not(:hover) {
-    scrollbar-color: rgba(255,255,255,0) rgba(0,0,0,0)
+    scrollbar-color: rgba(255, 255, 255, 0) rgba(0, 0, 0, 0)
 }
 
 .subtle-thin-scrollbar:not(:hover)::-webkit-scrollbar {
-    background-color: rgba(0,0,0,0)
+    background-color: rgba(0, 0, 0, 0)
 }
 
 .subtle-thin-scrollbar:not(:hover)::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0)
+    background: rgba(255, 255, 255, 0)
 }
 
 .slider {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    background: rgba(0,0,0,0);
+    background: rgba(0, 0, 0, 0);
     padding: 0;
     width: 120px
 }
@@ -3199,7 +3528,7 @@ a:hover {
     width: 10px;
     height: 16px;
     border-radius: 7px;
-    background: #389cdb;
+    background: var(--slider-thumb);
     cursor: pointer;
     margin-top: -6px
 }
@@ -3209,14 +3538,14 @@ a:hover {
     width: 10px;
     height: 16px;
     border-radius: 7px;
-    background: #389cdb;
+    background: var(--slider-thumb);
     cursor: pointer
 }
 
 .slider::-webkit-slider-runnable-track {
     height: 4px;
     border-radius: 2px;
-    background-color: rgba(255,255,255,.3);
+    background-color: var(--slider-track);
     cursor: pointer;
     border: none
 }
@@ -3224,7 +3553,24 @@ a:hover {
 .slider::-moz-range-track {
     height: 4px;
     border-radius: 2px;
-    background-color: rgba(255,255,255,.3);
+    background-color: var(--slider-track);
     cursor: pointer;
     border: none
+}
+
+/* Auto-hide UI during gameplay */
+.auto-hide-ui {
+    transition: opacity 0.3s ease-in-out;
+    opacity: 1;
+}
+
+.auto-hide-ui.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Hide cursor logic */
+.hide-cursor,
+.hide-cursor * {
+    cursor: none !important;
 }

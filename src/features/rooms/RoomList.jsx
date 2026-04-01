@@ -4,6 +4,7 @@ import { getRooms } from "./rooms.service.js";
 import { useNavigate } from "react-router-dom";
 import SettingsPopup from "../../components/SettingsPopup.jsx";
 import Popup from "../../components/Popup.jsx";
+import InputDialog from "../../components/InputDialog.jsx";
 import { usePlayerData } from "../../hooks/usePlayerData.jsx";
 
 const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
@@ -38,16 +39,100 @@ function RoomList() {
   const containerRef = useRef(null);
   const [roomSelected, setRoomSelected] = useState(null);
   const [popupComponent, setPopupComponent] = useState(null);
+  const [popupProps, setPopupProps] = useState({});
   const navigate = useNavigate();
   const join = useCallback((roomId) => navigate(`/JoinRoom/${roomId}`), [navigate]);
-  const closePopup = useCallback(()=>setPopupComponent(null), [setPopupComponent]);
+  const closePopup = useCallback(()=>{
+    setPopupComponent(null);
+    setPopupProps({});
+  }, []);
+
+  /** Opens the InputDialog popup with a promise-based API */
+  const promptUser = useCallback((dialogProps) => {
+    return new Promise((resolve) => {
+      setPopupProps({
+        ...dialogProps,
+        onSubmit: (value) => {
+          setPopupComponent(null);
+          setPopupProps({});
+          resolve(value);
+        },
+        onCancel: () => {
+          setPopupComponent(null);
+          setPopupProps({});
+          resolve(null);
+        },
+      });
+      setPopupComponent(() => InputDialog);
+    });
+  }, []);
+
   const handleRowClick = useCallback((roomId) => setRoomSelected(roomId), [setRoomSelected]);
-  const handleRowDoubleClick = useCallback((roomId) => join(roomId), [join]);
-  const handleJoinClick = useCallback(() => {
-    join(roomSelected);
-  }, [join, roomSelected]);
+
+  const handleRowDoubleClick = useCallback(async (roomId) => {
+    const room = rooms.find(r => r.id === roomId);
+    if (room?.data?.password) {
+      const password = await promptUser({
+        title: "Password required",
+        message: "This room requires a password:",
+        placeholder: "Enter password…",
+        inputType: "password",
+        submitText: "Join",
+      });
+      if (password === null) return;
+      navigate(`/JoinRoom/${roomId}`, { state: { password } });
+    } else {
+      navigate(`/JoinRoom/${roomId}`);
+    }
+  }, [navigate, rooms, promptUser]);
+
+  const handleJoinClick = useCallback(async () => {
+    const room = rooms.find(r => r.id === roomSelected);
+    if (room?.data?.password) {
+      const password = await promptUser({
+        title: "Password required",
+        message: "This room requires a password:",
+        placeholder: "Enter password…",
+        inputType: "password",
+        submitText: "Join",
+      });
+      if (password === null) return;
+      navigate(`/JoinRoom/${roomSelected}`, { state: { password } });
+    } else {
+      navigate(`/JoinRoom/${roomSelected}`);
+    }
+  }, [navigate, roomSelected, rooms, promptUser]);
+
+  const handleJoinHidden = useCallback(async () => {
+    const input = await promptUser({
+      title: "Join hidden room",
+      message: "Enter the room link or ID:",
+      placeholder: "https://www.haxball.com/play?c=… or ID",
+      submitText: "Next",
+    });
+    if (!input) return;
+    const trimmed = input.trim();
+    const match = trimmed.match(/\?c=([^&]+)/);
+    const roomId = match ? match[1] : trimmed;
+    if (!roomId) return;
+
+    // Ask for password (optional – user can leave blank)
+    const password = await promptUser({
+      title: "Room password",
+      message: "If the room has a password, enter it below.\nLeave empty if none.",
+      placeholder: "Password (optional)",
+      inputType: "password",
+      submitText: "Join",
+    });
+    if (password === null) return; // cancelled
+    navigate(`/JoinRoom/${roomId}`, { state: { password: password || null } });
+  }, [navigate, promptUser]);
+
   const showCreateRoom = useCallback(() => navigate("/CreateRoom"), [navigate]);
-  const handleSettings = useCallback(() => setPopupComponent(()=>SettingsPopup), []);
+  const handleSettings = useCallback(() => {
+    setPopupProps({});
+    setPopupComponent(()=>SettingsPopup);
+  }, []);
   const refresh = useCallback(() => {
     setRooms([]);
     if (player.geo)
@@ -80,7 +165,11 @@ function RoomList() {
     <div className="container flexRow">
       <div className="flexCol flexGrow">
         <div className="roomlist-view">
-          <Popup PopupComponent={popupComponent} closePopup={closePopup} />
+          <Popup
+            PopupComponent={popupComponent}
+            popupComponentProps={popupProps}
+            closePopup={closePopup}
+          />
           <div className="dialog">
             <h1>Room list</h1>
             <p>Tip: Join rooms near you to reduce lag.</p>
@@ -152,6 +241,13 @@ function RoomList() {
                 >
                   <i className="icon-login"></i>
                   <div>Join Room</div>
+                </button>
+                <button
+                  data-hook="join-hidden"
+                  onClick={handleJoinHidden}
+                >
+                  <i className="icon-login"></i>
+                  <div>Join Hidden</div>
                 </button>
                 <button data-hook="create" onClick={showCreateRoom}>
                   <i className="icon-plus"></i>

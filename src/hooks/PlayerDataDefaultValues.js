@@ -4,6 +4,7 @@ export default {
     geo: null,
     avatar: null,
     language: 'english',
+    theme: 'classic',
     extrapolation: 0,
     chat: {
       opacity: 0.8,
@@ -24,6 +25,11 @@ export default {
       showTeamColors: true,
       showAvatars: true,
       showChatIndicators: true,
+      showFPS: true,
+      showInputLag: true,
+      targetFPS: 0,
+      fullscreen: false,
+      resolution: 'native',
     },
     keys: {
       up: ["KeyW", "ArrowUp"],

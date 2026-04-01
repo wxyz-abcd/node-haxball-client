@@ -1,16 +1,23 @@
 import { Resizable } from "re-resizable";
-import React from 'react'
+import React, { useState } from 'react'
 export default React.memo(function ChatBox({
   chatRows,
-  inputValue,
-  setInputValue,
-  inputKeyDown,
+  onChatSubmit,
   chatInputRef,
   height,
   setPlayerField,
   roomRef,
   player
 }) {
+  const [inputValue, setInputValue] = useState("");
+
+  const inputKeyDown = (e) => {
+    if (e.code === "Enter" || e.code === "NumpadEnter") {
+      onChatSubmit(inputValue);
+      setInputValue("");
+    }
+  };
+
   const resizeStop = (event, from, element) => {
     setPlayerField("chat", {...player.chat, height: parseInt(element.style.height, 10) });
   };

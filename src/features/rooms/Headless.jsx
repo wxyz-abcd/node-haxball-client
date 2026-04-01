@@ -4,7 +4,7 @@ export default function Headless() {
       for (var file of event.target.files){
         var reader = new FileReader();
         reader.onload = function() {
-          eval(reader.result);
+          (new Function(reader.result))();
         };
         reader.readAsText(file);
       }

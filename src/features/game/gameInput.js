@@ -43,6 +43,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
     const gameKeysHandler = new GameKeysHandler(keys, room);
 
     const handleKeyDown = (e) => {
+        room._lastInputTime = performance.now();
         switch (e.code) {
             case 'Tab':
             case 'Enter':
@@ -61,6 +62,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
     };
 
     const handleKeyUp = (e) => {
+        room._lastInputTime = performance.now();
         gameKeysHandler.releaseKey(e.code);
     };
 
@@ -76,7 +78,9 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
     window.addEventListener("keyup", handleKeyUp);
     canvas.addEventListener("blur", handleBlur);
     canvas.addEventListener("wheel", handleWheel);
-    setTimeout(()=>canvas.focus())
+    if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        setTimeout(()=>canvas.focus());
+    }
     return {
         kill: () => {
             window.removeEventListener("keydown", handleKeyDown);
