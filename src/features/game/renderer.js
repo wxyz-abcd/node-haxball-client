@@ -116,6 +116,20 @@ export default function(API, params){
   });
 
   this.defineVariable({
+    name: "showFPS",
+    description: "Show FPS counter?", 
+    type: VariableType.Boolean,
+    value: true
+  });
+
+  this.defineVariable({
+    name: "showInputLag",
+    description: "Show Input Lag counter?", 
+    type: VariableType.Boolean,
+    value: true
+  });
+
+  this.defineVariable({
     name: "drawBackground",
     description: "Draw Background?", 
     type: VariableType.Boolean,
@@ -216,7 +230,7 @@ export default function(API, params){
     ]
   };
 
-  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false;
+  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false;
 
   function redrawJoint({ gr, dx, dy, color }){
     gr.moveTo(0, 0);
@@ -282,12 +296,14 @@ export default function(API, params){
   }
 
   function calculateLocationIndicatorValues(pos, viewWidth, viewHeight){
+    var topPadding = 50 / thisRenderer.zoomCoeff;
     viewWidth = 0.5*viewWidth-25;
-    viewHeight = 0.5*viewHeight-25;
+    var viewHeightTop = 0.5*viewHeight-25 - topPadding;
+    var viewHeightBottom = 0.5*viewHeight-25;
     var deltaX = pos.x-origin.x;
     var deltaY = pos.y-origin.y;
     var x = origin.x+((deltaX>viewWidth) ? viewWidth : ((deltaX<-viewWidth) ? -viewWidth : deltaX));
-    var y = origin.y+((deltaY>viewHeight) ? viewHeight : ((deltaY<-viewHeight) ? -viewHeight : deltaY));
+    var y = origin.y+((deltaY>viewHeightBottom) ? viewHeightBottom : ((deltaY<-viewHeightTop) ? -viewHeightTop : deltaY));
     deltaX = pos.x-x;
     deltaY = pos.y-y;
     return (deltaX*deltaX+deltaY*deltaY<=900) ? null : { x, y, angle: Math.atan2(deltaY, deltaX) };
@@ -296,6 +312,9 @@ export default function(API, params){
   function regenerateNecessaryObjects({FillGradient, Matrix, Container, Graphics, Text, Sprite}, {players, gameState}){
     if (!gameState)
       return;
+
+    if (stage) stage.destroy({ children: true });
+    
     var {physicsState, stadium} = gameState;
     customDiscInfo = [];
     customJointInfo = [];
@@ -654,8 +673,11 @@ export default function(API, params){
     }
     function initPauseRect(){
       const gr = new Graphics();
-      gr.x=0;
-      gr.y=0;
+      gr.rect(-0.5, 0, 1, 20);
+      gr.fill({color: "white"});
+      gr.x = 0;
+      gr.y = 0;
+      gr.visible = false;
       pauseRect = gr;
       stage3.addChild(gr);
     }
@@ -684,11 +706,14 @@ export default function(API, params){
         color: Utils.numberToColor(color)
       });
       gr.addChild(gr2);
+      stage2.addChild(gr);
       if (vals){
         gr.x = vals.x;
         gr.y = vals.y;
         gr.rotation = vals.angle;
-        stage2.addChild(gr);
+        gr.visible = true;
+      } else {
+        gr.visible = false;
       }
       locationIndicatorInfo[id] = gr;
     }
@@ -703,13 +728,45 @@ export default function(API, params){
       players.forEach((player)=>{
         var gr = new Sprite(texture4);
         gr.anchor.set(0.5);
+        gr.visible = false;
+        stage2.addChild(gr);
         chatIndicatorInfo[player.id] = {
           gr,
           active: false,
         };
-        //stage2.addChild(gr);
       });
     };
+    function initFPSCounter(){
+      fpsText = new Text({
+        text: "FPS: 60",
+        style: {
+          fontFamily: ["sans-serif"],
+          fontSize: 16,
+          fill: "#00FF00",
+          fontWeight: "bold",
+          stroke: { color: 0x000000, width: 3 }
+        }
+      });
+      fpsText.x = -params.canvas.width/2 + 20;
+      fpsText.y = -params.canvas.height/2 + 20;
+      fpsText.visible = thisRenderer.showFPS;
+      stage.addChild(fpsText);
+
+      inputLagText = new Text({
+        text: "Input Lag: 0.00ms",
+        style: {
+          fontFamily: ["sans-serif"],
+          fontSize: 16,
+          fill: "#FFFF00",
+          fontWeight: "bold",
+          stroke: { color: 0x000000, width: 3 }
+        }
+      });
+      inputLagText.x = -params.canvas.width/2 + 20;
+      inputLagText.y = -params.canvas.height/2 + 40;
+      inputLagText.visible = thisRenderer.showInputLag;
+      stage.addChild(inputLagText);
+    }
     thisRenderer.drawBackground && initBackground();
     thisRenderer.showVertices && physicsState.vertices.forEach(initVertex);
     physicsState.segments.forEach(initSegment);
@@ -722,6 +779,7 @@ export default function(API, params){
     initChatIndicators();
     initTexts();
     initLocationIndicators();
+    initFPSCounter();
     stage.addChild(stage3);
     lastRenderTime = window.performance.now();
   }
@@ -740,10 +798,10 @@ export default function(API, params){
         gr.x = vals.x;
         gr.y = vals.y;
         gr.rotation = vals.angle;
-        stage2.addChild(gr);
+        gr.visible = true;
       }
       else
-        stage2.removeChild(gr);
+        gr.visible = false;
     }
     updateLocationIndicator("ball", roomState.gameState.physicsState.discs[0]);
     roomState.players.forEach((player)=>updateLocationIndicator(player.id, player.disc));
@@ -780,6 +838,7 @@ export default function(API, params){
   
   function updateCameraOrigin(gameState, followDisc, viewWidth, viewHeight, deltaTime){
     var stadium = gameState.stadium;
+    var topPadding = 50 / thisRenderer.zoomCoeff;
     if (thisRenderer.followMode){
       var x, y, pos;
       if (followDisc && stadium.cameraFollow==1){
@@ -798,7 +857,7 @@ export default function(API, params){
           var w = 0.5*viewWidth;
           var h = 0.5*viewHeight;
           var minX = playerPos.x-w+50;
-          var minY = playerPos.y-h+50;
+          var minY = playerPos.y-h+50 + topPadding;
           var maxX = playerPos.x+w-50;
           var maxY = playerPos.y+h-50;
           x = x > maxX ? maxX : x < minX ? minX : x;
@@ -821,17 +880,18 @@ export default function(API, params){
         origin.x = stadium.width-0.5*viewWidth;
       else if (origin.x-0.5*viewWidth<-stadium.width)
         origin.x = -stadium.width+0.5*viewWidth;
-      if (viewHeight>2*stadium.height)
-        origin.y = 0;
+        
+      if (viewHeight - topPadding > 2*stadium.height)
+        origin.y = topPadding / 2;
       else if (origin.y+0.5*viewHeight>stadium.height)
         origin.y = stadium.height-0.5*viewHeight;
-      else if (origin.y-0.5*viewHeight<-stadium.height)
-        origin.y = -stadium.height+0.5*viewHeight;
+      else if (origin.y-0.5*viewHeight + topPadding <-stadium.height)
+        origin.y = -stadium.height+0.5*viewHeight - topPadding;
     }
     // fix all possible camera bugs
-    if (origin.x*0!=0)
+    if (Number.isNaN(origin.x))
       origin.x = 0;
-    if (origin.y*0!=0)
+    if (Number.isNaN(origin.y))
       origin.y = 0;
     stage2.x = -origin.x*thisRenderer.zoomCoeff;
     stage2.y = -origin.y*thisRenderer.zoomCoeff;
@@ -898,33 +958,48 @@ export default function(API, params){
         discInfo.mask.x = pos.x;
         discInfo.mask.y = pos.y;
         var teamColors = thisRenderer.showTeamColors ? roomState.teamColors[player.team.id] : defaultTeamColors[player.team.id];
-        if (thisRenderer.showAvatars){
-          discInfo.avatarText.text = player.avatar||player.avatarNumber;
+        
+        // Optimize Avatar Text
+        const avatarStr = thisRenderer.showAvatars ? (player.avatar || player.avatarNumber) : player.avatarNumber;
+        if (!discInfo.textCache || discInfo.textCache.avatar !== avatarStr || discInfo.textCache.avatarColor !== teamColors.text) {
+          discInfo.avatarText.text = avatarStr;
           discInfo.avatarText.style.fill = teamColors.text;
-          discInfo.avatarText.x = pos.x;
-          discInfo.avatarText.y = pos.y;
+          discInfo.textCache = discInfo.textCache || {};
+          discInfo.textCache.avatar = avatarStr;
+          discInfo.textCache.avatarColor = teamColors.text;
         }
-        else
-          discInfo.avatarText.text = player.avatarNumber;
-        if (!thisRenderer.currentPlayerDistinction || player.id!==thisRenderer.followPlayerId){
-          thisRenderer.showPlayerIds ? discInfo.playerNameText.text = `[${player.id}] ${player.name}` : discInfo.playerNameText.text = player.name;
+        discInfo.avatarText.x = pos.x;
+        discInfo.avatarText.y = pos.y;
+
+        // Optimize Player Name Text
+        if (!thisRenderer.currentPlayerDistinction || player.id !== thisRenderer.followPlayerId) {
+          const nameStr = thisRenderer.showPlayerIds ? `[${player.id}] ${player.name}` : player.name;
+          if (!discInfo.textCache || discInfo.textCache.name !== nameStr) {
+            discInfo.playerNameText.text = nameStr;
+            discInfo.textCache = discInfo.textCache || {};
+            discInfo.textCache.name = nameStr;
+          }
           discInfo.playerNameText.x = pos.x;
           discInfo.playerNameText.y = pos.y;
-          if (discInfo.playerNameMask){
+          if (discInfo.playerNameMask) {
             discInfo.playerNameMask.x = pos.x;
             discInfo.playerNameMask.y = pos.y;
           }
+        } else {
+          if (!discInfo.textCache || discInfo.textCache.name !== "") {
+            discInfo.playerNameText.text = "";
+            discInfo.textCache = discInfo.textCache || {};
+            discInfo.textCache.name = "";
+          }
         }
-        else
-          discInfo.playerNameText.text = "";
         var chatIndicator = chatIndicatorInfo[player.id];
         if (chatIndicator.active && thisRenderer.showChatIndicators){
           chatIndicator.gr.x = disc.pos.x;
           chatIndicator.gr.y = disc.pos.y-25;
-          stage2.addChild(chatIndicator.gr);
+          chatIndicator.gr.visible = true;
         }
         else
-          stage2.removeChild(chatIndicator.gr);
+          chatIndicator.gr.visible = false;
         if (!discInfo.teamCache || discInfo.teamCache.teamId !== player.team.id || discInfo.teamCache.isKicking !== player.isKicking || discInfo.teamCache.colors !== teamColors.inner){
           redrawPlayerDisc(discInfo, teamColors, disc, player);
           discInfo.teamCache = {
@@ -959,17 +1034,21 @@ export default function(API, params){
     updateHalo(roomState);
   }
 
-  function updateGamePaused(gameState) { // Oq
+  function updateGamePaused(gameState) {
     var paused = gameState.pauseGameTickCounter>0;
     setGamePaused(paused);
-    if (!paused)
+    if (!paused) {
+      pauseRect.visible = false;
       return;
-    pauseRect.clear();
-    if (gameState.pauseGameTickCounter!=120){
-      var width = (gameState.pauseGameTickCounter/120)*200;
-      pauseRect.rect(origin.x+-0.5*width,origin.y+ 100, width, 20);
-      pauseRect.setFillStyle("white");
-      pauseRect.fill();
+    }
+    if (gameState.pauseGameTickCounter!=120) {
+      pauseRect.visible = true;
+      pauseRect.x = origin.x;
+      pauseRect.y = origin.y + 100;
+      pauseRect.scale.x = (gameState.pauseGameTickCounter/120)*200;
+      pauseRect.scale.y = 1;
+    } else {
+      pauseRect.visible = false;
     }
     textInfo.gamePause.renderStatic();
   }
@@ -979,7 +1058,7 @@ export default function(API, params){
       return;
     if (!pauseState) {
       textInfo.gamePause.removeFromStage();
-      pauseRect.clear();
+      pauseRect.visible = false;
     }
     params.canvas.style.filter = pauseState ? "grayscale(70%)" : "";
     gamePaused = pauseState;
@@ -989,14 +1068,23 @@ export default function(API, params){
     var { canvas } = params;
     if (!canvas.parentElement)
       return;
-    var coeff = window.devicePixelRatio*thisRenderer.resolutionScale, rect = canvas.getBoundingClientRect();
-    var w = Math.round(coeff*rect.width), h = Math.round(coeff*rect.height);
-    if (canvas.width!=w || canvas.height!=h){
-      canvas.width = w;
-      canvas.height = h;
-      rendererObj.resize(w, h);
-      stage.x = w/2;
-      stage.y = h/2;
+    var rect = canvas.parentElement.getBoundingClientRect();
+    var logicalWidth = Math.round(rect.width);
+    var logicalHeight = Math.round(rect.height);
+    var expectedResolution = window.devicePixelRatio * thisRenderer.resolutionScale;
+    if (rendererObj.resolution != expectedResolution || rendererObj.screen.width != logicalWidth || rendererObj.screen.height != logicalHeight){
+      rendererObj.resolution = expectedResolution;
+      rendererObj.resize(logicalWidth, logicalHeight);
+      stage.x = logicalWidth / 2;
+      stage.y = logicalHeight / 2;
+      if (fpsText) {
+        fpsText.x = -logicalWidth / 2 + 20;
+        fpsText.y = -logicalHeight / 2 + 20;
+      }
+      if (inputLagText) {
+        inputLagText.x = -logicalWidth / 2 + 20;
+        inputLagText.y = -logicalHeight / 2 + 40;
+      }
     }
   };
 
@@ -1005,10 +1093,10 @@ export default function(API, params){
     if (thisRenderer.currentPlayerDistinction && pos){
       customHaloInfo.gr.x = pos.x;
       customHaloInfo.gr.y = pos.y;
-      customHaloInfo.haloContainer.addChild(customHaloInfo.gr);
+      customHaloInfo.gr.visible = true;
       return;
     }
-    customHaloInfo.haloContainer.removeChild(customHaloInfo.gr);
+    customHaloInfo.gr.visible = false;
   };
 
   this.initialize = function(){
@@ -1029,7 +1117,8 @@ export default function(API, params){
       rendererObj.init({
         view: params.canvas,
         antialias: true,
-        resolution: thisRenderer.resolutionScale,
+        resolution: window.devicePixelRatio * thisRenderer.resolutionScale,
+        autoDensity: false,
         backgroundColor: "#1099bb",
         forceFXAA: true,
         legacy: false,
@@ -1066,7 +1155,10 @@ export default function(API, params){
     chatIndicatorInfo = null;
   };
 
-  this.render = function(){ // render logic here. called inside requestAnimationFrame callback
+  var customLoopId = null;
+  var renderFromCustomLoop = false;
+
+  function _doRender() {
     if (!stage || !stage2 || !stage3)
       return;
     var extrapolatedRoomState = thisRenderer.room.extrapolate(thisRenderer.extrapolation, true);
@@ -1075,24 +1167,131 @@ export default function(API, params){
     var time = window.performance.now();
     spf = (time-lastRenderTime)/1000;
     var followPlayer = extrapolatedRoomState.getPlayer(thisRenderer.followPlayerId), followDisc = followPlayer?.disc;
-    var zoomCoeff = thisRenderer.zoomCoeff*window.devicePixelRatio*thisRenderer.resolutionScale;
-    var maxViewWidth = extrapolatedRoomState.gameState.stadium.maxViewWidth, viewWidth = params.canvas.width/zoomCoeff;
+    
+    // Al usar resolution y autoDensity, las medidas logicas no necesitan escalar por resolutionScale ni dPr
+    var zoomCoeff = thisRenderer.zoomCoeff;  
+    var maxViewWidth = extrapolatedRoomState.gameState.stadium.maxViewWidth, viewWidth = rendererObj.screen.width/zoomCoeff;
     if (maxViewWidth>0 && maxViewWidth<viewWidth){
       viewWidth = maxViewWidth;
-      zoomCoeff = params.canvas.width/maxViewWidth;
+      zoomCoeff = rendererObj.screen.width/maxViewWidth;
     }
-    var viewHeight = params.canvas.height/zoomCoeff;
+    var viewHeight = rendererObj.screen.height/zoomCoeff;
     lastRenderTime = time;
     updateCameraOrigin(extrapolatedRoomState.gameState, followDisc, viewWidth, viewHeight, spf);
-    //this.ctx.scale(zoomCoeff, zoomCoeff);
     resizeCanvas();
     update(extrapolatedRoomState, viewWidth, viewHeight);
     if (extrapolatedRoomState.gameState.pauseGameTickCounter<=0){
       updateText(spf);
       renderText();
     }
+    if (thisRenderer.showFPS && fpsText) {
+      fpsFrameCount++;
+      if (time - fpsLastSecond >= 1000) {
+        fpsDisplay = fpsFrameCount;
+        fpsFrameCount = 0;
+        fpsLastSecond = time;
+        fpsText.text = "FPS: " + fpsDisplay;
+      }
+    }
+    if (thisRenderer.showInputLag && inputLagText && thisRenderer.room._lastInputTime) {
+      const currentInputTime = thisRenderer.room._lastInputTime;
+      if (currentInputTime !== lastProcessedInputTime) {
+        const lag = time - currentInputTime;
+        inputLagRollingSum += lag;
+        inputLagRollingCount++;
+        lastProcessedInputTime = currentInputTime;
+      }
+      
+      if (inputLagRollingCount >= 10) {
+        const avgLag = inputLagRollingSum / inputLagRollingCount;
+        inputLagText.text = "Input Lag: " + avgLag.toFixed(2) + "ms";
+        inputLagRollingSum = 0;
+        inputLagRollingCount = 0;
+      }
+    }
     rendererObj.render(stage);
     params.onRequestAnimationFrame?.(extrapolatedRoomState);
+  }
+
+  var messageChannel = new MessageChannel();
+  var isLoopRunning = false;
+  var targetFrameTime = 0;
+
+  messageChannel.port1.onmessage = function() {
+    if (!isLoopRunning) return;
+
+    var now = performance.now();
+
+    // If targetFPS > 0, we prioritize that. 
+    if (thisRenderer.targetFPS > 0) {
+      if (now < targetFrameTime) {
+        // Not time yet? Use a hybrid approach to save CPU
+        var remaining = targetFrameTime - now;
+        if (remaining > 5) {
+          // If more than 5ms remaining, use a passive sleep to save CPU
+          customLoopId = setTimeout(() => {
+            if (isLoopRunning) messageChannel.port2.postMessage(null);
+          }, remaining - 2); // Wait until almost the right time
+        } else {
+          // SPIN MODE: Check in every possible tick for sub-ms precision
+          messageChannel.port2.postMessage(null);
+        }
+        return;
+      }
+      // TIME TO RENDER
+      targetFrameTime = Math.max(now, targetFrameTime + 1000 / thisRenderer.targetFPS);
+    }
+
+    renderFromCustomLoop = true;
+    _doRender();
+    renderFromCustomLoop = false;
+
+    // Continue the loop
+    messageChannel.port2.postMessage(null);
+  };
+
+  function _scheduleNextTick() {
+    if (!isLoopRunning) return;
+    targetFrameTime = performance.now();
+    messageChannel.port2.postMessage(null);
+  }
+
+  function _customRenderTick() {
+    _scheduleNextTick();
+  }
+
+  function _startCustomLoop() {
+    if (isLoopRunning) return;
+    isLoopRunning = true;
+    _scheduleNextTick();
+  }
+
+  function _stopCustomLoop() {
+    isLoopRunning = false;
+    if (customLoopId != null) {
+      clearTimeout(customLoopId);
+      customLoopId = null;
+    }
+  }
+
+  this.render = function(){ // render logic here. called inside requestAnimationFrame callback
+    // When custom loop is active, skip rAF-triggered renders to avoid double-rendering
+    if (customLoopId != null && !renderFromCustomLoop)
+      return;
+    _doRender();
+  };
+
+  // Start the custom render loop once the renderer is ready
+  var _origInitialize = this.initialize;
+  this.initialize = function() {
+    _origInitialize?.call(thisRenderer);
+    _startCustomLoop();
+  };
+
+  var _origFinalize = this.finalize;
+  this.finalize = function() {
+    _stopCustomLoop();
+    _origFinalize?.call(thisRenderer);
   };
 
   this.fps = function(){
@@ -1140,6 +1339,18 @@ export default function(API, params){
       case "discLineWidth":
         _regenerateNecessaryObjects();
         break;
+      case "showFPS":
+        if (fpsText) fpsText.visible = newValue;
+        break;
+      case "showInputLag":
+        if (inputLagText) inputLagText.visible = newValue;
+        break;
+      case "resolutionScale":
+        if (rendererObj) {
+            rendererObj.resolution = window.devicePixelRatio * newValue;
+            _regenerateNecessaryObjects();
+        }
+        break;
     }
   };
 
@@ -1169,8 +1380,8 @@ export default function(API, params){
 
   this.zoomIn = function(pixelCoordX, pixelCoordY, zoomCoeff){
     var k = (1-1/zoomCoeff)/scale;
-    origin.x += k*(pixelCoordX-params.canvas.width/2);
-    origin.y += k*(pixelCoordY-params.canvas.height/2);
+    origin.x += k*(pixelCoordX - (rendererObj ? rendererObj.screen.width/2 : params.canvas.width/2));
+    origin.y += k*(pixelCoordY - (rendererObj ? rendererObj.screen.height/2 : params.canvas.height/2));
     scale *= zoomCoeff;
     thisRenderer.zoomCoeff = scale;
     _regenerateNecessaryObjects();
@@ -1178,8 +1389,8 @@ export default function(API, params){
 
   this.zoomOut = function(pixelCoordX, pixelCoordY, zoomCoeff){
     var k = (1-zoomCoeff)/scale;
-    origin.x += k*(pixelCoordX-params.canvas.width/2);
-    origin.y += k*(pixelCoordY-params.canvas.height/2);
+    origin.x += k*(pixelCoordX - (rendererObj ? rendererObj.screen.width/2 : params.canvas.width/2));
+    origin.y += k*(pixelCoordY - (rendererObj ? rendererObj.screen.height/2 : params.canvas.height/2));
     scale /= zoomCoeff;
     thisRenderer.zoomCoeff = scale;
     _regenerateNecessaryObjects();
@@ -1212,6 +1423,7 @@ export default function(API, params){
         }
         else
           scale -= 0.1;
+        _regenerateNecessaryObjects();
         break;
       }
     }
@@ -1237,7 +1449,7 @@ export default function(API, params){
   // snapshot support
 
   this.takeSnapshot = function(){
-    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth } = thisRenderer;
+    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth } = thisRenderer;
     return {
       webGPU, 
       extrapolation, 
@@ -1248,6 +1460,7 @@ export default function(API, params){
       wheelZoomCoeff, 
       resolutionScale, 
       showChatIndicators, 
+      showFPS, 
       restrictCameraOrigin, 
       followMode, 
       followPlayerId, 
@@ -1274,7 +1487,7 @@ export default function(API, params){
   };
 
   this.useSnapshot = function(snapshot){
-    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth } = snapshot;
+    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth } = snapshot;
     Object.assign(thisRenderer, {
       webGPU, 
       extrapolation, 
@@ -1285,6 +1498,7 @@ export default function(API, params){
       wheelZoomCoeff, 
       resolutionScale, 
       showChatIndicators, 
+      showFPS, 
       restrictCameraOrigin, 
       followMode, 
       followPlayerId, 

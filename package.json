@@ -5,16 +5,21 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"cross-env vite\" \"cross-env nw ./ development\"",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && nw . --user-data-dir=.nw-local-data development\"",
     "preview": "cross-env vite build && cross-env nw ./ production",
-    "dist": "vite build && nwbuild --platform=linux --mode=build --glob=false --flavor=sdk --cacheDir=./node_modules/nw ./",
+    "dist:win": "vite build && nwbuild --platform=win --mode=build --flavor=sdk --cacheDir=../nw-cache --outDir=../node-haxball-client-out/win --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
+    "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=sdk --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
+    "dist:all": "npm run dist:win && npm run dist:linux",
+    "zip:win": "npm run dist:win && powershell -Command \"Compress-Archive -Path '../node-haxball-client-out/win/*' -DestinationPath '../node-haxball-client-out/node-haxball-client-win.zip' -Force\"",
+    "zip:linux": "npm run dist:linux && powershell -Command \"Compress-Archive -Path '../node-haxball-client-out/linux/*' -DestinationPath '../node-haxball-client-out/node-haxball-client-linux.zip' -Force\"",
     "lint": "eslint ."
   },
   "window": {
+    "icon": "",
     "transparent": true,
     "frame": true
   },
-  "chromium-args": "--allow-file-access-from-files --disable-web-security",
+  "chromium-args": "--allow-file-access-from-files --disable-web-security --disable-frame-rate-limit --disable-gpu-vsync --force-gpu-rasterization --ignore-gpu-blocklist --enable-zero-copy",
   "node-remote": "<all_urls>",
   "dependencies": {
     "@koush/wrtc": "^0.5.3",
@@ -38,6 +43,7 @@
     "globals": "^16.3.0",
     "nw": "^0.102.0-sdk",
     "nw-builder": "^4.15.0",
-    "vite": "^7.0.4"
+    "vite": "^7.0.4",
+    "wait-on": "^9.0.4"
   }
 }

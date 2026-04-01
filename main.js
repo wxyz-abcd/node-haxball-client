@@ -8,10 +8,10 @@ const API = require("node-haxball")({
       RTCSessionDescription: RTCSessionDescription, 
 });
 
-const isDev = nw.App.argv[0] === "development";
+const isDev = nw.App.argv.includes("development");
 const openPath = isDev
   ? "http://localhost:5173"
-  : path.join("file:///",__dirname, "dist/index.html");
+  : "dist/index.html";
 nw.Window.open(openPath, {}, function(win) {
     win.window.API = API;
 });

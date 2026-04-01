@@ -15,6 +15,7 @@ import { downloadFile } from "../../utils/downloadFile.js";
 import ChatBox from './components/ChatBox.jsx';
 import RoomHeader from './components/RoomHeader.jsx';
 import GameCanvas from './components/GameCanvas.jsx';
+import GameStateGUI from './components/GameStateGUI.jsx';
 import chatSnd from "../../assets/sounds/chat.ogg"
 import crowdSnd from "../../assets/sounds/crowd.ogg"
 import goalSnd from "../../assets/sounds/goal.ogg"
@@ -25,8 +26,6 @@ import leaveSnd from "../../assets/sounds/leave.ogg"
 import Popup from '../../components/Popup.jsx'
 import { useCallback } from "react";
 import SoundButton from "./components/SoundButton.jsx";
-
-var oldGUIValues = {};
 
 function Sound(volume) {
   this.audio = new (window.AudioContext || window.webkitAudioContext)();
@@ -54,21 +53,13 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const API = useMemo(()=>(usingCustomAPI || window.API), [usingCustomAPI]);
   const { player, setPlayerField } = usePlayerData();
   const [roomName, setRoomName] = useState(null);
-  const [roomScore, setRoomScore] = useState({ red: 0, blue: 0 });
   const [stadiumName, setStadiumName] = useState(null);
-  const [timeWarn, setTimeWarn] = useState(false);
-  const [overtime, setOvertime] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showRoomView, setShowRoomView] = useState(false);
   const [chatRows, setChatRows] = useState([]);
-  const [inputValue, setInputValue] = useState("");
   const [players, setPlayers] = useState([]);
   const [teamsLocked, setTeamsLocked] = useState(true);
   const [gameStarted, setGameStarted] = useState(false);
-  const [m1, setM1] = useState("0");
-  const [m2, setM2] = useState("0");
-  const [s1, setS1] = useState("0");
-  const [s2, setS2] = useState("0");
   const [popup, setPopup] = useState(null);
   const [timeLimit, setTimeLimit] = useState(0);
   const [scoreLimit, setScoreLimit] = useState(0);
@@ -237,14 +228,11 @@ export default function Game({ roomRef, usingCustomAPI }) {
     return true;
   }, [API.Utils, chatApi, roomRef, setPlayerField]);
 
-  const inputKeyDown = useCallback((e) => {
-    if (e.code === "Enter" || e.code === "NumpadEnter") {
-      if (inputValue.length > 0 && !analyzeChatCommand(inputValue)) {
-        roomRef.current?.sendChat(inputValue);
-      }
-      setInputValue("");
+  const onChatSubmit = useCallback((value) => {
+    if (value.length > 0 && !analyzeChatCommand(value)) {
+      roomRef.current?.sendChat(value);
     }
-  }, [analyzeChatCommand, inputValue, roomRef]);
+  }, [analyzeChatCommand, roomRef]);
 
   const make2Digits = useCallback((a) => {
     let s = String(a || "");
@@ -296,34 +284,6 @@ export default function Game({ roomRef, usingCustomAPI }) {
   }), [roomRef]);
 
   const handleMenu = useCallback(() => setShowRoomView(prev => !prev), []);
-  const updateGameStateGUI = useCallback((gameState) => {
-    if (!gameState) return;
-    const _redScore = gameState.redScore, _blueScore = gameState.blueScore;
-    if (oldGUIValues.redScore !== _redScore || oldGUIValues.blueScore !== _blueScore) {
-      setRoomScore({ red: _redScore, blue: _blueScore });
-      oldGUIValues.redScore = _redScore;
-      oldGUIValues.blueScore = _blueScore;
-    }
-    const totalGameTime = 60 * gameState.timeLimit;
-    const elapsedGameTime = gameState.timeElapsed | 0;
-    const s = elapsedGameTime % 60, m = (elapsedGameTime / 60) | 0;
-    if (elapsedGameTime < totalGameTime && elapsedGameTime > totalGameTime - 30) {
-      if (!oldGUIValues.timeWarningActive) {
-        setTimeWarn(true); oldGUIValues.timeWarningActive = true;
-      }
-    } else if (oldGUIValues.timeWarningActive) {
-      setTimeWarn(false); oldGUIValues.timeWarningActive = false;
-    }
-    if (totalGameTime !== 0 && elapsedGameTime > totalGameTime) {
-      if (!oldGUIValues.overtimeActive) { setOvertime(true); oldGUIValues.overtimeActive = true; }
-    } else if (oldGUIValues.overtimeActive) { setOvertime(false); oldGUIValues.overtimeActive = false; }
-
-    const mm1 = ((m / 10) | 0) % 10, mm2 = m % 10, ss1 = ((s / 10) | 0) % 10, ss2 = s % 10;
-    if (oldGUIValues.m1 !== mm1) { setM1("" + mm1); oldGUIValues.m1 = mm1; }
-    if (oldGUIValues.m2 !== mm2) { setM2("" + mm2); oldGUIValues.m2 = mm2; }
-    if (oldGUIValues.s1 !== ss1) { setS1("" + ss1); oldGUIValues.s1 = ss1; }
-    setS2("" + ss2);
-  }, []);
   
   useEffect(() => {
     const room = roomRef?.current;
@@ -334,7 +294,6 @@ export default function Game({ roomRef, usingCustomAPI }) {
     setPlayers([...room.players]);
     setRoomName(room.name);
     setStadiumName(room.stadium?.name || "");
-    setRoomScore({ red: room.redScore, blue: room.blueScore });
     setTimeLimit(room.timeLimit);
     setScoreLimit(room.scoreLimit);
     setTeamsLocked(room.state?.teamsLocked ?? true);
@@ -356,15 +315,9 @@ export default function Game({ roomRef, usingCustomAPI }) {
           canvas,
           paintGame: true,
           images: { grass: imgs[0], concrete: imgs[1], concrete2: imgs[2], typing: imgs[3] },
-          onRequestAnimationFrame: () => {
-            counter++;
-            if (counter>30){
-							counter=0;
-							updateGameStateGUI(room.gameState);
-						}
-          }
+          onRequestAnimationFrame: () => {}
         });
-        const rendererOptions = ["discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators"]
+        const rendererOptions = ["discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "targetFPS"]
         for (let i = 0; i < rendererOptions.length; i++) {
             defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
         }
@@ -394,7 +347,6 @@ export default function Game({ roomRef, usingCustomAPI }) {
 
     room.onAfterStadiumChange = (stadium) => setStadiumName(stadium.name);
     room.onAfterTeamGoal = () => {
-      setRoomScore({ red: room.redScore, blue: room.blueScore });
       if (player.sound.main) s.playSound(s.goal);
     };
     room.onAfterPlayerAdminChange = (id, admin) => {
@@ -460,7 +412,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
     const chatInputEl = chatInput.current;
     const keysHandler = setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi, player.keys, canvas, chatInputEl);
     return () => { keysHandler.kill(); };
-  }, [chatApi, player, roomRef, canvasRef, chatInput]);
+  }, [chatApi, player.keys, roomRef, canvasRef, chatInput]);
 
   const changeScoreLimit = useCallback((value) => {
     setScoreLimit(value);
@@ -471,35 +423,47 @@ export default function Game({ roomRef, usingCustomAPI }) {
     roomRef.current?.setTimeLimit(value);
   }, [roomRef]);
 
+  const [uiVisible, setUiVisible] = useState(true);
+
+  useEffect(() => {
+    if (!gameStarted) {
+      setUiVisible(true);
+      return;
+    }
+    
+    let timer;
+    const handleActivity = () => {
+      setUiVisible(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setUiVisible(false);
+      }, 3000);
+    };
+
+    handleActivity();
+    window.addEventListener('mousemove', handleActivity);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('mousemove', handleActivity);
+    };
+  }, [gameStarted]);
+
+  const uiClass = gameStarted && !uiVisible ? "auto-hide-ui hidden" : "auto-hide-ui";
+  const viewClass = gameStarted && !uiVisible ? "game-view hide-cursor" : "game-view";
+
   return (
-    <div tabIndex={-1} className="game-view" style={{ "--chat-opacity": `${player.chat.opacity}`}}>
+    <div tabIndex={-1} className={viewClass} style={{ "--chat-opacity": `${player.chat.opacity}`}}>
       <div className="gameplay-section">
         <div className="game-state-view" style={{visibility: !gameStarted ? 'hidden' : 'visible'}}>
           <div className="bar-container" style={{pointerEvents:'none'}}>
-            <div className="bar">
-              <div className="scoreboard">
-                <div className="teamicon red" />
-                <div className="score">{roomScore.red}</div>
-                <div className="-">-</div>
-                <div className="score">{roomScore.blue}</div>
-                <div className="teamicon blue" />
-              </div>
-              <div className="fps-limit-fix" />
-              <div className={`game-timer-view ${timeWarn ? 'time-warn' : ''}`}>
-                <span className={`overtime ${overtime ? 'on' : ''}`}>OVERTIME!</span>
-                <span className="digit">{m1}</span>
-                <span className="digit">{m2}</span>
-                <span className="null">:</span>
-                <span className="digit">{s1}</span>
-                <span className="digit">{s2}</span>
-              </div>
-            </div>
+            <GameStateGUI roomRef={roomRef} />
           </div>
           <GameCanvas canvasRef={canvasRef} />
         </div>
       </div>
 
-      <div className="top-section" style={{zIndex: showRoomView ? 2 : 0}}>
+      <div className={`top-section ${uiClass}`} style={{zIndex: showRoomView ? 2 : 0}}>
         {showRoomView ? (
           <RoomHeader
             roomRef={roomRef}
@@ -522,13 +486,11 @@ export default function Game({ roomRef, usingCustomAPI }) {
         ) : null}
       </div>
 
-      <div tabIndex={-1} className="bottom-section" style={{zIndex:2, width:'50vw'}}>
+      <div tabIndex={-1} className={`bottom-section ${uiClass}`} style={{zIndex:2, width:'50vw'}}>
 
         <ChatBox
           chatRows={chatRows}
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          inputKeyDown={inputKeyDown}
+          onChatSubmit={onChatSubmit}
           chatInputRef={chatInput}
           height={player.chat.height}
           player={player}
@@ -539,7 +501,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
         <div className="bottom-spacer" />
       </div>
 
-      <div className="buttons" style={{zIndex:2}}>
+      <div className={`buttons ${uiClass}`} style={{zIndex:2}}>
         <SoundButton player={player} initialVolume={player.sound.gain} soundInstance={soundInstanceRef.current} setPlayerField={setPlayerField}></SoundButton>
         <button data-hook="menu" disabled={!gameStarted} onClick={handleMenu}><i className="icon-menu" />Menu<span className="tooltip">Toggle room menu [Escape]</span></button>
         <button data-hook="settings" onClick={handleSettings}><i className="icon-cog" /></button>

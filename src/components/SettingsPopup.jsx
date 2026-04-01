@@ -4,6 +4,7 @@ import SoundContent from "./settingsTabs/SoundContent.jsx";
 import VideoContent from "./settingsTabs/VideoContent.jsx";
 import InputContent from "./settingsTabs/InputContent.jsx";
 import MiscContent from "./settingsTabs/MiscContent.jsx";
+import ThemeContent from "./settingsTabs/ThemeContent.jsx";
 import { useCallback } from "react";
 
 function SettingsPopup({onClose, roomRef /*PlayerDataProvider*/}) {
@@ -12,7 +13,18 @@ function SettingsPopup({onClose, roomRef /*PlayerDataProvider*/}) {
     setPlayerField(field, value);
   }, [setPlayerField]);
 
-  const [content, setContent] = useState(()=><SoundContent player={player} setPlayerField={setPlayerFieldCb} />)
+  const [activeTab, setActiveTab] = useState("sound");
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "sound": return <SoundContent player={player} setPlayerField={setPlayerFieldCb} />;
+      case "video": return <VideoContent player={player} setPlayerField={setPlayerFieldCb} roomRef={roomRef} />;
+      case "input": return <InputContent player={player} setPlayerField={setPlayerFieldCb} />;
+      case "misc": return <MiscContent player={player} setPlayerField={setPlayerFieldCb} />;
+      case "theme": return <ThemeContent />;
+      default: return null;
+    }
+  };
 
   return (
     <div className="view-wrapper">
@@ -20,21 +32,44 @@ function SettingsPopup({onClose, roomRef /*PlayerDataProvider*/}) {
         <h1>Settings</h1>
         <button onClick={onClose} data-hook="close">Close</button>
         <div className="tabs">
-          <button onClick={() => setContent(<SoundContent player={player} setPlayerField={setPlayerFieldCb} />)} data-hook="soundbtn" className="">
+          <button 
+            onClick={() => setActiveTab("sound")} 
+            data-hook="soundbtn" 
+            className={activeTab === "sound" ? "active" : ""}
+          >
           Sound
           </button>
-          <button onClick={() => setContent(<VideoContent player={player} setPlayerField={setPlayerFieldCb} roomRef={roomRef} />)} data-hook="videobtn" className="" >
+          <button 
+            onClick={() => setActiveTab("video")} 
+            data-hook="videobtn" 
+            className={activeTab === "video" ? "active" : ""}
+          >
           Video
           </button>
-          <button onClick={() => setContent(<InputContent player={player} setPlayerField={setPlayerFieldCb} />)} data-hook="inputbtn" className="" >
+          <button 
+            onClick={() => setActiveTab("input")} 
+            data-hook="inputbtn" 
+            className={activeTab === "input" ? "active" : ""}
+          >
           Input
           </button>
-          <button onClick={() => setContent(<MiscContent player={player} setPlayerField={setPlayerFieldCb} />)} data-hook="miscbtn" className="" >
+          <button 
+            onClick={() => setActiveTab("misc")} 
+            data-hook="miscbtn" 
+            className={activeTab === "misc" ? "active" : ""}
+          >
           Misc
           </button>
+          <button 
+            onClick={() => setActiveTab("theme")} 
+            data-hook="themebtn" 
+            className={activeTab === "theme" ? "active" : ""}
+          >
+          Theme
+          </button>
         </div>
-        <div className="tabContents">
-          {content}
+        <div className="tabcontents">
+          {renderContent()}
         </div>
       </div>
     </div>

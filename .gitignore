@@ -1,3 +1,6 @@
+# NW data
+.nw-local-data
+
 # Logs
 logs
 *.log
