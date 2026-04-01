@@ -1,284 +1,234 @@
+// Singleton to persist FFI functions and avoid expensive reloads
+function getWin32API() {
+    if (typeof window === 'undefined' || typeof window.nw === 'undefined') return null;
+    
+    if (!window.__haxball_ffi) {
+        try {
+            const { User32, ffi, Def } = window.require('win32-api');
+            // Load basic functions
+            const user32 = User32.load(['ChangeDisplaySettingsExW']);
+            const dlly = ffi.load('user32.dll');
+            
+            // Define EnumDisplaySettingsW manually using LPVOID for the buffer
+            // This prevents registering complex structures in Koffi (preventing Duplicate type errors)
+            let EnumDisplaySettingsW;
+            try {
+               EnumDisplaySettingsW = dlly.func('EnumDisplaySettingsW', Def.BOOL, [Def.WString, Def.DWORD, Def.LPVOID]);
+            } catch (e) {
+               EnumDisplaySettingsW = dlly.EnumDisplaySettingsW;
+            }
+
+            window.__haxball_ffi = { user32, ffi, Def, EnumDisplaySettingsW };
+            console.log("[Resolution] FFI Local Singleton Initialized (Manual Mode)");
+        } catch (err) {
+            console.error("[Resolution] FFI Initialization failed:", err);
+            return null;
+        }
+    }
+    return window.__haxball_ffi;
+}
+
+/**
+ * DEVMODEW Layout (Manual offsets for maximum stability):
+ * dmSize: Offset 36 (2 bytes / WORD)
+ * dmFields: Offset 40 (4 bytes / DWORD)
+ * dmPelsWidth: Offset 172 (4 bytes / DWORD)
+ * dmPelsHeight: Offset 176 (4 bytes / DWORD)
+ * dmDisplayFrequency: Offset 184 (DWORD)
+ * dmDisplayFixedOutput: Offset 188 (DWORD)
+ */
+const DM_BITSPERPEL = 0x00040000;
+const DM_PELSWIDTH = 0x00080000;
+const DM_PELSHEIGHT = 0x00100000;
+const DM_DISPLAYFREQUENCY = 0x00400000;
+const DM_DISPLAYFIXEDOUTPUT = 0x20000000;
+const DMDFO_STRETCH = 1;
+const CDS_FULLSCREEN = 4;
+const CDS_TEST = 2;
+function createDevModeBuffer() {
+    const buf = Buffer.alloc(220); // Standard DEVMODEW size
+    buf.writeUInt16LE(220, 36);    // Initialize dmSize
+    return buf;
+}
+
 export async function setActualDisplayResolution(width, height, sync = false) {
-  const promise = new Promise((resolve, reject) => {
+  const isNw = typeof window.nw !== 'undefined';
+  if (!isNw) return false;
+
+  const process = window.require('process');
+  const child_process = window.require('child_process');
+
+  if (process.platform === 'win32') {
+    const api = getWin32API();
+    if (!api) throw new Error("Native API not available");
+
     try {
-      const isNw = typeof window.nw !== 'undefined';
-      if (!isNw) return resolve(false);
+      const { user32, EnumDisplaySettingsW } = api;
+      const dm = createDevModeBuffer();
 
-      const process = window.require('process');
-      const child_process = window.require('child_process');
-
-      if (process.platform !== 'win32') {
-        if (!sync) console.warn('Cambiar la resolución real de pantalla durante partida solo está soportado en Windows. (Ignorando petición debido a uso de Linux/Wayland)');
-        return resolve(false);
+      // 1. Verify current resolution (ENUM_CURRENT_SETTINGS = -1)
+      if (EnumDisplaySettingsW(null, -1, dm)) {
+        const currentWidth = dm.readUInt32LE(172);
+        const currentHeight = dm.readUInt32LE(176);
+        if (currentWidth === width && currentHeight === height) {
+          console.log('[Resolution] Already at target resolution');
+          return 'OK:ALREADY';
+        }
       }
 
-      // Script en PowerShell para invocar ChangeDisplaySettings de User32.dll
-      const psScript = `
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public class ScreenRes {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DEVMODE {
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
-        public short dmSpecVersion;
-        public short dmDriverVersion;
-        public short dmSize;
-        public short dmDriverExtra;
-        public int dmFields;
-        public int dmPositionX;
-        public int dmPositionY;
-        public int dmDisplayOrientation;
-        public int dmDisplayFixedOutput;
-        public short dmColor;
-        public short dmDuplex;
-        public short dmYResolution;
-        public short dmTTOption;
-        public short dmCollate;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
-        public short dmLogPixels;
-        public int dmBitsPerPel;
-        public int dmPelsWidth;
-        public int dmPelsHeight;
-        public int dmDisplayFlags;
-        public int dmDisplayFrequency;
-        public int dmICMMethod;
-        public int dmICMIntent;
-        public int dmMediaType;
-        public int dmDitherType;
-        public int dmReserved1;
-        public int dmReserved2;
-        public int dmPanningWidth;
-        public int dmPanningHeight;
-    }
-    [DllImport("user32.dll")]
-    public static extern int EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
-    [DllImport("user32.dll")]
-    public static extern int ChangeDisplaySettings(ref DEVMODE devMode, int flags);
+      // 2. Search for the maximum hertz (we still prefer the fastest native mode)
+      let maxHz = 60;
+      let i = 0;
+      const tempDm = createDevModeBuffer();
+      while (api.EnumDisplaySettingsW(null, i, tempDm)) {
+        const w = tempDm.readUInt32LE(172);
+        const h = tempDm.readUInt32LE(176);
+        const hz = tempDm.readUInt32LE(184);
 
-    public static void ChangeRes(int width, int height) {
-        DEVMODE dm = new DEVMODE();
-        dm.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE));
-        EnumDisplaySettings(null, -1, ref dm);
-        
-        // Si ya estamos en esa resolucion, no hacer nada
-        if (dm.dmPelsWidth == width && dm.dmPelsHeight == height) {
-            Console.WriteLine("OK:ALREADY");
-            return;
+        if (w === width && h === height) {
+          if (hz >= maxHz) maxHz = hz;
         }
-        
-        dm.dmPelsWidth = width;
-        dm.dmPelsHeight = height;
-        dm.dmFields = 0x00080000 | 0x00100000; // DM_PELSWIDTH | DM_PELSHEIGHT
+        i++;
+      }
 
-        // Test first (CDS_TEST = 2)
-        int testResult = ChangeDisplaySettings(ref dm, 2);
-        if (testResult != 0) {
-            Console.WriteLine("FAIL:TEST:" + testResult);
-            return;
-        }
+      // 3. Create final buffer using the REGISTRY MODE (NATIVE) as a template
+      // This inherits SpecVersion, BitDepth, and original system flags
+      const finalDm = createDevModeBuffer();
+      if (!api.EnumDisplaySettingsW(null, -2, finalDm)) {
+        throw new Error("Could not capture native display settings template");
+      }
 
-        int result = ChangeDisplaySettings(ref dm, 0);
-        if (result == 0) {
-            Console.WriteLine("OK:APPLIED");
-        } else {
-            Console.WriteLine("FAIL:APPLY:" + result);
-        }
-    }
-}
-"@;
-[ScreenRes]::ChangeRes(${width}, ${height})
-`;
+      // Auto-Restore Verification (Native Detection)
+      // If the requested resolution is the native registry one, we restore instead of changing (more reliable)
+      const regWidth = finalDm.readUInt32LE(172);
+      const regHeight = finalDm.readUInt32LE(176);
+      if (regWidth === width && regHeight === height) {
+        console.log(`[Resolution] Auto-Detect: ${width}x${height} is the native registry resolution. Using Restore instead.`);
+        return restoreActualDisplayResolution(sync);
+      }
 
-      const Buffer = window.require('buffer').Buffer;
-      const base64Script = Buffer.from(psScript, 'utf16le').toString('base64');
-      const cmd = `powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -EncodedCommand ${base64Script}`;
+      // 4. Apply changes to the template (for non-native resolutions)
+      finalDm.writeUInt32LE(width, 172);  // dmPelsWidth
+      finalDm.writeUInt32LE(height, 176); // dmPelsHeight
+      finalDm.writeUInt32LE(maxHz, 184);  // dmDisplayFrequency
       
-      if (sync) {
-        try {
-          const output = child_process.execSync(cmd, { encoding: 'utf8' });
-          console.log('[Resolution] Sync result:', output?.trim());
-        } catch (e) {
-          console.error('[Resolution] Sync error:', e.message);
-        }
-        resolve(true);
+      // Ensure that the necessary fields are active
+      let fields = finalDm.readUInt32LE(40); // dmFields
+      fields |= DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+      
+      // Attempt to force Stretch if possible
+      finalDm.writeUInt32LE(DMDFO_STRETCH, 188); // dmDisplayFixedOutput
+      finalDm.writeUInt32LE(fields | DM_DISPLAYFIXEDOUTPUT, 40);
+
+      const testResult = api.user32.ChangeDisplaySettingsExW(null, finalDm, 0, CDS_TEST, 0);
+      
+      // If the driver rejects the Stretching flag (-2), we remove it and retry with basic Resolution
+      if (testResult !== 0) {
+        console.warn(`[Resolution] Driver rejected DMDFO_STRETCH (Code: ${testResult}). Fallback to basic mode.`);
+        finalDm.writeUInt32LE(fields, 40); // Restore fields without the FixedOutput flag
+      }
+
+      const result = api.user32.ChangeDisplaySettingsExW(null, finalDm, 0, CDS_FULLSCREEN, 0);
+      if (result === 0) {
+        console.log(`[Resolution] Success! Applied ${width}x${height} at ${maxHz}Hz using Desktop Template`);
+        return 'OK:APPLIED';
       } else {
-        child_process.exec(cmd, (error, stdout, stderr) => {
-          if (error) {
-            console.error("[Resolution] PowerShell error:", error.message);
-            if (stderr) console.error("[Resolution] stderr:", stderr);
-            return reject(new Error(`PowerShell execution failed: ${error.message}`));
-          }
-          const result = stdout?.toString().trim();
-          if (result) {
-            if (result.startsWith('FAIL')) {
-              console.warn(`[Resolution] Failed to change to ${width}x${height}:`, result);
-              return reject(new Error(result));
-            } else {
-              console.log(`[Resolution] ${width}x${height}:`, result);
-            }
-          }
-          resolve(result || 'OK');
-        });
+        throw new Error(`Failed to apply mode (Result: ${result})`);
       }
     } catch (err) {
-      if (!sync) console.error("Fallo general al intentar ajustar la resolucion nativa", err);
-      reject(err);
+      console.error("[Resolution] Native Windows Error:", err.message);
+      throw err;
     }
-  });
-
-  if (sync) {
-      // Dummy block to prevent unhandled rejections if used synchronously without await
-      promise.catch(()=>null);
+  } else if (process.platform === 'linux') {
+    return new Promise((resolve, reject) => {
+      child_process.exec('xrandr | grep " connected primary"', (error, stdout) => {
+        const outputName = stdout.split(' ')[0] || 'eDP-1';
+        const cmd = `xrandr --output ${outputName} --mode ${width}x${height}`;
+        child_process.exec(cmd, (err) => {
+          if (err) return reject(err);
+          resolve('OK:APPLIED');
+        });
+      });
+    });
   }
-  return promise;
+  return false;
 }
 
 export function setActualDisplayResolutionSync(width, height) {
-    setActualDisplayResolution(width, height, true).catch(()=>null);
+  setActualDisplayResolution(width, height, true).catch(() => null);
 }
 
 export async function getSupportedResolutions() {
-  return new Promise((resolve) => {
+  const isNw = typeof window.nw !== 'undefined';
+  if (!isNw) return [];
+
+  const process = window.require('process');
+  const child_process = window.require('child_process');
+
+  if (process.platform === 'win32') {
+    const api = getWin32API();
+    if (!api) return [];
+
     try {
-      const isNw = typeof window.nw !== 'undefined';
-      if (!isNw) return resolve([]);
-      const process = window.require('process');
-      const child_process = window.require('child_process');
-      if (process.platform !== 'win32') return resolve([]);
+      const { EnumDisplaySettingsW } = api;
+      const dm = createDevModeBuffer();
 
-      const psScript = `
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-public class ScreenResList {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DEVMODE {
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmDeviceName;
-        public short dmSpecVersion;
-        public short dmDriverVersion;
-        public short dmSize;
-        public short dmDriverExtra;
-        public int dmFields;
-        public int dmPositionX;
-        public int dmPositionY;
-        public int dmDisplayOrientation;
-        public int dmDisplayFixedOutput;
-        public short dmColor;
-        public short dmDuplex;
-        public short dmYResolution;
-        public short dmTTOption;
-        public short dmCollate;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string dmFormName;
-        public short dmLogPixels;
-        public int dmBitsPerPel;
-        public int dmPelsWidth;
-        public int dmPelsHeight;
-        public int dmDisplayFlags;
-        public int dmDisplayFrequency;
-        public int dmICMMethod;
-        public int dmICMIntent;
-        public int dmMediaType;
-        public int dmDitherType;
-        public int dmReserved1;
-        public int dmReserved2;
-        public int dmPanningWidth;
-        public int dmPanningHeight;
+      const resolutions = new Set();
+      let i = 0;
+      while (EnumDisplaySettingsW(null, i, dm)) {
+        const w = dm.readUInt32LE(172);
+        const h = dm.readUInt32LE(176);
+        resolutions.add(`${w}x${h}`);
+        i++;
+      }
+      return Array.from(resolutions);
+    } catch (err) {
+      console.error("[Resolution] Failed to get native resolutions:", err);
+      return [];
     }
-    [DllImport("user32.dll")]
-    public static extern int EnumDisplaySettings(string deviceName, int modeNum, ref DEVMODE devMode);
-
-    public static void GetRes() {
-        DEVMODE dm = new DEVMODE();
-        dm.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE));
-        int modeNum = 0;
-        List<string> modes = new List<string>();
-        while (EnumDisplaySettings(null, modeNum, ref dm) != 0) {
-            string res = dm.dmPelsWidth.ToString() + "x" + dm.dmPelsHeight.ToString();
-            if (!modes.Contains(res)) {
-                modes.Add(res);
-            }
-            modeNum++;
-        }
-        Console.WriteLine(string.Join(",", modes.ToArray()));
-    }
-}
-"@;
-[ScreenResList]::GetRes()
-`;
-      const Buffer = window.require('buffer').Buffer;
-      const base64Script = Buffer.from(psScript, 'utf16le').toString('base64');
-      child_process.exec(`powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -EncodedCommand ${base64Script}`, (error, stdout) => {
-        if (error || !stdout) return resolve([]);
-        const str = stdout.toString().trim();
-        const arr = str.split(',').map(s => s.trim()).filter(Boolean);
-        resolve(arr);
+  } else if (process.platform === 'linux') {
+    return new Promise((resolve) => {
+      child_process.exec('xrandr', (error, stdout) => {
+        if (error) return resolve([]);
+        const resolutions = new Set();
+        const lines = stdout.split('\n');
+        lines.forEach(line => {
+          const match = line.match(/^\s+(\d+x\d+)/);
+          if (match) resolutions.add(match[1]);
+        });
+        resolve(Array.from(resolutions));
       });
-    } catch {
-      resolve([]);
-    }
-  });
+    });
+  }
+  return [];
 }
 
 export async function restoreActualDisplayResolution(sync = false) {
-  const promise = new Promise((resolve, reject) => {
+  const isNw = typeof window.nw !== 'undefined';
+  if (!isNw) return false;
+
+  const process = window.require('process');
+  const child_process = window.require('child_process');
+
+  if (process.platform === 'win32') {
     try {
-      const isNw = typeof window.nw !== 'undefined';
-      if (!isNw) return resolve(false);
-
-      const process = window.require('process');
-      const child_process = window.require('child_process');
-
-      if (process.platform !== 'win32') {
-        return resolve(false);
-      }
-
-      // Script in C# to trigger a blank ChangeDisplaySettings resetting everything
-      const psScript = `
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public class ScreenResRestore {
-    [DllImport("user32.dll")]
-    public static extern int ChangeDisplaySettings(IntPtr devMode, int flags);
-
-    public static void Restore() {
-        ChangeDisplaySettings(IntPtr.Zero, 0); 
-    }
-}
-"@;
-[ScreenResRestore]::Restore()
-`;
-
-      const Buffer = window.require('buffer').Buffer;
-      const base64Script = Buffer.from(psScript, 'utf16le').toString('base64');
-      const cmd = `powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -NoProfile -EncodedCommand ${base64Script}`;
-      
-      if (sync) {
-        child_process.execSync(cmd);
-        resolve(true);
-      } else {
-        child_process.exec(cmd, (error) => {
-          if (error) {
-            console.error("Error restaurando resolucion desde PowerShell:", error);
-            return reject(error);
-          }
-          resolve(true);
-        });
-      }
+      const { user32 } = getWin32API();
+      // CDS_RESET = 0, passing 0 (NULL) as DEVMODE restores the registry settings
+      user32.ChangeDisplaySettingsExW(null, 0, 0, 0, 0);
+      return true;
     } catch (err) {
-      if (!sync) console.error("Fallo general al intentar restaurar la resolucion", err);
-      reject(err);
+      console.error("[Resolution] Restore Error:", err);
+      return false;
     }
-  });
-
-  if (sync) {
-      promise.catch(()=>null);
+  } else if (process.platform === 'linux') {
+    return new Promise((resolve) => {
+      child_process.exec('xrandr --auto', () => resolve(true));
+    });
   }
-  return promise;
+
+  return false;
 }
 
 export function restoreActualDisplayResolutionSync() {
-    restoreActualDisplayResolution(true).catch(()=>null);
+  restoreActualDisplayResolution(true).catch(() => null);
 }

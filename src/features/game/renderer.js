@@ -188,6 +188,20 @@ export default function(API, params){
     }
   });
 
+  this.defineVariable({
+    name: "displayMode",
+    description: "Display mode (windowed, borderless, exclusive)",
+    type: VariableType.String,
+    value: 'windowed'
+  });
+
+  this.defineVariable({
+    name: "resolution",
+    description: "Game target resolution",
+    type: VariableType.String,
+    value: 'native'
+  });
+
   var thisRenderer = this, { Point, Team, TeamColors } = Impl.Core;
   var defaultTeamColors = [new TeamColors(), new TeamColors(), new TeamColors()];
   defaultTeamColors[1].inner.push(15035990);
@@ -1064,19 +1078,54 @@ export default function(API, params){
     gamePaused = pauseState;
   }
 
+
+  var needsRecenter = false;
+
   function resizeCanvas(){
     var { canvas } = params;
     if (!canvas.parentElement)
-      return;
+      return { width: rendererObj.width, height: rendererObj.height };
+    
     var rect = canvas.parentElement.getBoundingClientRect();
-    var logicalWidth = Math.round(rect.width);
-    var logicalHeight = Math.round(rect.height);
+    var parentWidth = Math.round(rect.width);
+    var parentHeight = Math.round(rect.height);
+    
+    var logicalWidth = parentWidth;
+    var logicalHeight = parentHeight;
+
+    // Get renderer configuration (synchronized variables)
+    const isBorderless = thisRenderer.displayMode === 'borderless';
+    const targetRes = thisRenderer.resolution;
+
+    // Prioritize selected resolution in Borderless to avoid native "flashes"
+    if (isBorderless && targetRes && targetRes !== 'native' && targetRes !== 'custom') {
+      const parts = targetRes.split('x');
+      const w = Number(parts[0]), h = Number(parts[1]);
+      if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+        logicalWidth = w;
+        logicalHeight = h;
+      }
+    }
+
     var expectedResolution = window.devicePixelRatio * thisRenderer.resolutionScale;
-    if (rendererObj.resolution != expectedResolution || rendererObj.screen.width != logicalWidth || rendererObj.screen.height != logicalHeight){
+    var expectedPhysicalWidth = Math.round(logicalWidth * expectedResolution);
+    var expectedPhysicalHeight = Math.round(logicalHeight * expectedResolution);
+    
+    // If dimensions or scale change, force instant synchronization (using expected PHYSICAL width)
+    if (needsRecenter || Math.abs(rendererObj.resolution - expectedResolution) > 0.001 || rendererObj.width !== expectedPhysicalWidth || rendererObj.height !== expectedPhysicalHeight){
+      const changed = rendererObj.width !== expectedPhysicalWidth || rendererObj.height !== expectedPhysicalHeight || Math.abs(rendererObj.resolution - expectedResolution) > 0.001;
+      
       rendererObj.resolution = expectedResolution;
       rendererObj.resize(logicalWidth, logicalHeight);
+      
+      // Restore stretched CSS (PIXI.resize() overrides with fixed pixels)
+      params.canvas.style.width = '100%';
+      params.canvas.style.height = '100%';
+      
+      stage.pivot.set(0, 0);
       stage.x = logicalWidth / 2;
       stage.y = logicalHeight / 2;
+      
       if (fpsText) {
         fpsText.x = -logicalWidth / 2 + 20;
         fpsText.y = -logicalHeight / 2 + 20;
@@ -1085,8 +1134,16 @@ export default function(API, params){
         inputLagText.x = -logicalWidth / 2 + 20;
         inputLagText.y = -logicalHeight / 2 + 40;
       }
+
+      // If it is the first frame of the change, mark to re-orient the next frame as well (double-sync)
+      if (changed && !needsRecenter) {
+        needsRecenter = true;
+      } else {
+        needsRecenter = false;
+      }
     }
-  };
+    return { width: logicalWidth, height: logicalHeight };
+  }
 
   function updateHalo(roomState){
     var pos = roomState.getPlayer(thisRenderer.followPlayerId)?.disc?.pos;
@@ -1164,21 +1221,28 @@ export default function(API, params){
     var extrapolatedRoomState = thisRenderer.room.extrapolate(thisRenderer.extrapolation, true);
     if (!params.paintGame || !extrapolatedRoomState.gameState || !rendererObj)
       return;
+
+    // 1. Synchronize dimensions and capture final LOGICAL values immediately
+    const currentDims = resizeCanvas();
+    const currentWidth = currentDims.width;
+    const currentHeight = currentDims.height;
+
     var time = window.performance.now();
     spf = (time-lastRenderTime)/1000;
     var followPlayer = extrapolatedRoomState.getPlayer(thisRenderer.followPlayerId), followDisc = followPlayer?.disc;
     
-    // Al usar resolution y autoDensity, las medidas logicas no necesitan escalar por resolutionScale ni dPr
-    var zoomCoeff = thisRenderer.zoomCoeff;  
-    var maxViewWidth = extrapolatedRoomState.gameState.stadium.maxViewWidth, viewWidth = rendererObj.screen.width/zoomCoeff;
-    if (maxViewWidth>0 && maxViewWidth<viewWidth){
-      viewWidth = maxViewWidth;
-      zoomCoeff = rendererObj.screen.width/maxViewWidth;
+    // USE the newly confirmed dimensions for the camera and framing
+    var stadium = extrapolatedRoomState.gameState.stadium;
+    var maxViewWidth = 2*stadium.width+100;
+    var zoomCoeff = thisRenderer.zoomCoeff;
+    if (currentWidth/zoomCoeff > maxViewWidth){
+      zoomCoeff = currentWidth/maxViewWidth;
     }
-    var viewHeight = rendererObj.screen.height/zoomCoeff;
+    var viewWidth = currentWidth/zoomCoeff;
+    var viewHeight = currentHeight/zoomCoeff;
+    
     lastRenderTime = time;
     updateCameraOrigin(extrapolatedRoomState.gameState, followDisc, viewWidth, viewHeight, spf);
-    resizeCanvas();
     update(extrapolatedRoomState, viewWidth, viewHeight);
     if (extrapolatedRoomState.gameState.pauseGameTickCounter<=0){
       updateText(spf);
@@ -1209,7 +1273,7 @@ export default function(API, params){
         inputLagRollingCount = 0;
       }
     }
-    rendererObj.render(stage);
+    rendererObj.render({container: stage});
     params.onRequestAnimationFrame?.(extrapolatedRoomState);
   }
 
@@ -1351,6 +1415,10 @@ export default function(API, params){
             _regenerateNecessaryObjects();
         }
         break;
+      case "displayMode":
+      case "resolution":
+        resizeCanvas();
+        break;
     }
   };
 
@@ -1449,7 +1517,7 @@ export default function(API, params){
   // snapshot support
 
   this.takeSnapshot = function(){
-    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth } = thisRenderer;
+    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth, displayMode, resolution } = thisRenderer;
     return {
       webGPU, 
       extrapolation, 
@@ -1471,6 +1539,8 @@ export default function(API, params){
       showVertices, 
       generalLineWidth, 
       discLineWidth,
+      displayMode,
+      resolution,
       /*
       customDiscInfo: JSON.parse(JSON.stringify(customDiscInfo)), 
       customJointInfo: JSON.parse(JSON.stringify(customJointInfo)), 
@@ -1487,7 +1557,7 @@ export default function(API, params){
   };
 
   this.useSnapshot = function(snapshot){
-    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth } = snapshot;
+    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth, displayMode, resolution } = snapshot;
     Object.assign(thisRenderer, {
       webGPU, 
       extrapolation, 
@@ -1509,6 +1579,8 @@ export default function(API, params){
       showVertices, 
       generalLineWidth, 
       discLineWidth,
+      displayMode,
+      resolution
     });
     /*
     customDiscInfo = snapshot.customDiscInfo;

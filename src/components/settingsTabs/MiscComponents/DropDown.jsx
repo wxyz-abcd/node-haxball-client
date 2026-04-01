@@ -43,7 +43,7 @@ export default function DropDown({
 
         dropDownRef.current.value = flag;
         onSelect && onSelect(flag);
-        selectorPopup.style.visibility = "hidden"; // cerrar al seleccionar
+        selectorPopup.style.visibility = "hidden"; // close on select
       };
     }
 
@@ -89,13 +89,13 @@ export default function DropDown({
     dropDownRef.current.appendChild(selectorContents);
     dropDownRef.current.appendChild(selectorPopup);
 
-    // abrir popup al click
+    // open popup on click
     dropDownRef.current.onclick = function (e) {
-      e.stopPropagation(); // para que no se cierre al abrir
+      e.stopPropagation(); // prevent closing when opening
       selectorPopup.style.visibility = "visible";
     };
 
-    // cerrar popup al hacer click fuera
+    // close popup on outside click
     const handleClickOutside = (e) => {
       if (dropDownRef.current && !dropDownRef.current.contains(e.target)) {
         selectorPopup.style.visibility = "hidden";

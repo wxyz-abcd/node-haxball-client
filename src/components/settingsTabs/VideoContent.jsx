@@ -11,7 +11,6 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
   const [playerCopy, setPlayerCopy] = useState(player);
   const [commonResolutions, setCommonResolutions] = useState([
     { label: "Native", value: "native" },
-    { label: "Custom", value: "custom" },
   ]);
   const [resNotification, setResNotification] = useState(null);
 
@@ -44,12 +43,12 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         
         const resPath = path.join(processPath, "resolutions.json");
 
-        // Reemplazamos la lógica dura por descubrimiento nativo
+        // Replace hardcoded logic with native discovery
         let nativeDetected = [];
         try {
             const detected = await getSupportedResolutions();
             if (detected && detected.length > 0) {
-                // Ordenar por resolución (Width)
+                // Sort by resolution (Width)
                 detected.sort((a,b) => parseInt(a.split('x')[0]) - parseInt(b.split('x')[0]));
                 nativeDetected = detected.map(res => ({ label: `${res} (System)`, value: res }));
             }
@@ -61,7 +60,7 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
           try {
             const parsed = JSON.parse(data);
             if (Array.isArray(parsed) && parsed.length > 0) {
-               // Si el archivo viejo tiene resoluciones como el 4K, lo borramos si ya detectamos resoluciones oficiales
+               // If the old file has resolutions like 4K, we clear it if we have already detected official resolutions
                if (nativeDetected.length > 0 && parsed[0].label === "Native" && parsed.length > 2) {
                    fs.writeFileSync(resPath, JSON.stringify([], null, 2), "utf8");
                } else {
@@ -78,9 +77,8 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         const merged = [{ label: "Native", value: "native" }, ...nativeDetected];
         const mergedVals = new Set(merged.map(x=>x.value));
         fileResolutions.forEach(r => {
-            if (!mergedVals.has(r.value) && r.value !== "native" && r.value !== "custom") merged.push(r);
+            if (!mergedVals.has(r.value) && r.value !== "native") merged.push(r);
         });
-        merged.push({ label: "Custom", value: "custom" });
         setCommonResolutions(merged);
       } catch (e) {
         console.error("Failed to load generic resolutions:", e);
@@ -88,7 +86,6 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
           { label: "Native", value: "native" },
           { label: "800x600 (Fallback)", value: "800x600" },
           { label: "1920x1080 (Fallback)", value: "1920x1080" },
-          { label: "Custom", value: "custom" },
         ]);
       }
     };
@@ -104,11 +101,6 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
     if (roomRef?.renderer) roomRef.renderer[field] = value;
   };
 
-  const handleCustomResolutionChange = (width, height) => {
-    const resString = `${width}x${height}`;
-    rendererChanged("resolution", resString);
-  };
-
   const chatChanged = (field, value) => {
     setPlayerField("chat", { ...player.chat, [field]: value });
     setPlayerCopy((prev) => ({
@@ -118,16 +110,18 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
   };
 
   const currentResolutionValue = playerCopy.renderer.resolution || "native";
-  const isCustom = !commonResolutions.find(r => r.value === currentResolutionValue) || currentResolutionValue === "custom";
 
-  let customWidth = 1280;
-  let customHeight = 720;
-  if (isCustom && currentResolutionValue !== "custom") {
-    const parts = currentResolutionValue.split("x");
-    if (parts.length === 2) {
-      customWidth = parseInt(parts[0]) || 1280;
-      customHeight = parseInt(parts[1]) || 720;
-    }
+  const isWindows = typeof window.process !== 'undefined' && window.process.platform === 'win32';
+  const isLinux = typeof window.process !== 'undefined' && window.process.platform === 'linux';
+  const isX11 = isLinux && (window.process.env.XDG_SESSION_TYPE === 'x11' || !!window.process.env.DISPLAY);
+  
+  const displayModeOptions = [
+    { label: "Windowed", value: "windowed" },
+    { label: "Fullscreen Windowed (Borderless)", value: "borderless" },
+  ];
+
+  if (isWindows || isX11) {
+    displayModeOptions.push({ label: "Fullscreen (Exclusive)", value: "exclusive" });
   }
 
   return (
@@ -152,45 +146,20 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
           >✕</span>
         </div>
       )}
-      <Toggle
-        title={"Full Screen"}
-        value={playerCopy.renderer.fullscreen}
-        defaultValue={playerDefaultValues.renderer.fullscreen}
-        onChange={(value) => rendererChanged("fullscreen", value)}
+      <SelectOption
+        title={"Display Mode"}
+        value={playerCopy.renderer.displayMode || "windowed"}
+        options={displayModeOptions}
+        defaultValue={playerDefaultValues.renderer.displayMode}
+        onChange={(value) => rendererChanged("displayMode", value)}
       />
       <SelectOption
         title={"Resolution"}
-        value={isCustom ? "custom" : currentResolutionValue}
+        value={currentResolutionValue}
         options={commonResolutions}
         defaultValue={playerDefaultValues.renderer.resolution}
-        onChange={(value) => {
-          if (value === "custom") {
-            rendererChanged("resolution", `${customWidth}x${customHeight}`);
-          } else {
-            rendererChanged("resolution", value);
-          }
-        }}
+        onChange={(value) => rendererChanged("resolution", value)}
       />
-      {isCustom && (
-        <>
-          <NumericInput
-            title={"Custom Width"}
-            min={640}
-            max={7680}
-            value={customWidth}
-            defaultValue={1280}
-            onChange={(val) => handleCustomResolutionChange(val, customHeight)}
-          />
-          <NumericInput
-            title={"Custom Height"}
-            min={480}
-            max={4320}
-            value={customHeight}
-            defaultValue={720}
-            onChange={(val) => handleCustomResolutionChange(customWidth, val)}
-          />
-        </>
-      )}
       <Toggle
         title={"Use web gpu"}
         value={playerCopy.renderer.webgpu}
