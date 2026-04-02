@@ -211,16 +211,11 @@ export default function Game({ roomRef, usingCustomAPI }) {
         break;
       case "store":
         var f = room.stadium;
-        if (!f.isCustom)
+        if (!f.isCustom) {
           chatApi.receiveNotice("Can't store default stadium.");
-        else {
+        } else {
           chatApi.receiveNotice("Not implemented to keep the web examples simple.");
-          //insertStadium({name: f.name, contents: API.Utils.exportStadium(f)}).then(()=>{
-          //chatApi.receiveNotice("Stadium stored");
-          //}, ()=>{
-          //chatApi.receiveNotice("Couldn't store stadium");
-          //});
-        };
+        }
         break;
       default:
         chatApi.receiveNotice(`Unknown command: ${tokens[0]}`);
@@ -317,7 +312,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
           images: { grass: imgs[0], concrete: imgs[1], concrete2: imgs[2], typing: imgs[3] },
           onRequestAnimationFrame: () => {}
         });
-        const rendererOptions = ["discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "targetFPS"]
+        const rendererOptions = ["discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "targetFPS", "displayMode", "resolution"]
         for (let i = 0; i < rendererOptions.length; i++) {
             defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
         }

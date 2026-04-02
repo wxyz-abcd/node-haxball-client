@@ -28,7 +28,7 @@ export default {
       showFPS: true,
       showInputLag: true,
       targetFPS: 0,
-      fullscreen: false,
+      displayMode: 'windowed',
       resolution: 'native',
     },
     keys: {
