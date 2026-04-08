@@ -137,8 +137,7 @@ function RoomList() {
     setRooms([]);
     if (player.geo)
       getRooms(player.geo).then(setRooms);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [player.geo]);
   const goToNameForm = useCallback(() => navigate('/'), [navigate]);
   const goToHeadless = useCallback(() => navigate('/Headless'), [navigate]);
   const goToSandbox = useCallback(() => navigate('/CreateSandbox'), [navigate]);
