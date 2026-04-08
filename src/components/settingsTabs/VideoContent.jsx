@@ -162,9 +162,9 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
       />
       <Toggle
         title={"Use web gpu"}
-        value={playerCopy.renderer.webgpu}
-        defaultValue={playerDefaultValues.renderer.webgpu}
-        onChange={(value) => rendererChanged("webgpu", value)}
+        value={playerCopy.renderer.webGPU}
+        defaultValue={playerDefaultValues.renderer.webGPU}
+        onChange={(value) => rendererChanged("webGPU", value)}
       />
       <Toggle
         title={"Custom team colors enabled"}

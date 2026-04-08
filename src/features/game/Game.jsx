@@ -312,7 +312,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
           images: { grass: imgs[0], concrete: imgs[1], concrete2: imgs[2], typing: imgs[3] },
           onRequestAnimationFrame: () => {}
         });
-        const rendererOptions = ["discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "targetFPS", "displayMode", "resolution"]
+        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "targetFPS", "displayMode", "resolution"]
         for (let i = 0; i < rendererOptions.length; i++) {
             defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
         }
