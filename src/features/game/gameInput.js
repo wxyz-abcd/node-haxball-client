@@ -1,6 +1,6 @@
 class GameKeysHandler {
     constructor(playerKeys, room) {
-        this.keyState = 0;
+        this.keyState = room.getKeyState?.() ?? 0;
         this.room = room;
 
         const keys = new Map();
@@ -21,25 +21,46 @@ class GameKeysHandler {
             }
         };
 
+        this.queueKeyState = (nextKeyState) => {
+            if (nextKeyState === this.keyState && !this.room._hasPendingKeyState) return;
+            this.keyState = nextKeyState;
+            this.room._queuePendingKeyState?.(nextKeyState);
+        };
+
         this.pressKey = (key) => {
-            this.keyState |= keyValue(key);
-            this.room.setKeyState(this.keyState, true);
+            const value = keyValue(key);
+            if (!value) return;
+            this.queueKeyState(this.keyState | value);
         };
 
         this.releaseKey = (key) => {
-            this.keyState &= ~keyValue(key);
-            this.room.setKeyState(this.keyState, true);
+            const value = keyValue(key);
+            if (!value) return;
+            this.queueKeyState(this.keyState & ~value);
         };
 
         this.reset = () => {
             if (this.keyState === 0) return;
-            this.keyState = 0;
-            this.room.setKeyState(0, true);
+            this.queueKeyState(0);
         };
     }
 };
 
 export default function setGameInputs(room, roomView, chatApi, keys, canvas, chatInput) {
+    room._pendingKeyState = room.getKeyState?.() ?? 0;
+    room._hasPendingKeyState = false;
+    room._queuePendingKeyState = (state) => {
+        room._pendingKeyState = state;
+        room._hasPendingKeyState = true;
+        room.renderer?.requestImmediateRender?.();
+    };
+    room._flushPendingKeyState = () => {
+        if (!room._hasPendingKeyState) return false;
+        room.setKeyState(room._pendingKeyState, true);
+        room._hasPendingKeyState = false;
+        return true;
+    };
+
     const gameKeysHandler = new GameKeysHandler(keys, room);
 
     const handleKeyDown = (e) => {
@@ -88,6 +109,11 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
             canvas.removeEventListener("blur", handleBlur);
             canvas.removeEventListener("wheel", handleWheel);
             gameKeysHandler.reset();
+            room._flushPendingKeyState?.();
+            delete room._pendingKeyState;
+            delete room._hasPendingKeyState;
+            delete room._queuePendingKeyState;
+            delete room._flushPendingKeyState;
         }
     };
 }
