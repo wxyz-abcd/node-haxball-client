@@ -244,7 +244,8 @@ export default function(API, params){
     ]
   };
 
-  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false;
+  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false, framesInFlight = 0, rendererLifecycleToken = 0, renderBlockedByGPU = false, forceImmediateRender = false;
+  var maxFramesInFlight = 2;
 
   function redrawJoint({ gr, dx, dy, color }){
     gr.moveTo(0, 0);
@@ -1214,13 +1215,55 @@ export default function(API, params){
 
   var customLoopId = null;
   var renderFromCustomLoop = false;
+  const RenderResult = {
+    skipped: 0,
+    rendered: 1,
+    blocked: 2,
+  };
+
+  function _resetFrameThrottleState() {
+    framesInFlight = 0;
+    renderBlockedByGPU = false;
+    forceImmediateRender = false;
+    rendererLifecycleToken++;
+  }
+
+  function _resolveFrameCompletion(token) {
+    if (token !== rendererLifecycleToken)
+      return;
+    framesInFlight = Math.max(0, framesInFlight - 1);
+    if (renderBlockedByGPU && isLoopRunning) {
+      renderBlockedByGPU = false;
+      messageChannel.port2.postMessage(null);
+    }
+  }
+
+  function _trackSubmittedFrame(queue) {
+    framesInFlight++;
+    const token = rendererLifecycleToken;
+    queue.onSubmittedWorkDone().then(
+      ()=>_resolveFrameCompletion(token),
+      ()=>_resolveFrameCompletion(token)
+    );
+  }
+
+  function _getGPUQueue() {
+    return rendererObj?.gpu?.device?.queue;
+  }
 
   function _doRender() {
     if (!stage || !stage2 || !stage3)
-      return;
+      return RenderResult.skipped;
+    if (!params.paintGame || !rendererObj)
+      return RenderResult.skipped;
+    const queue = _getGPUQueue();
+    if (queue?.onSubmittedWorkDone && framesInFlight >= maxFramesInFlight) {
+      renderBlockedByGPU = true;
+      return RenderResult.blocked;
+    }
     var extrapolatedRoomState = thisRenderer.room.extrapolate(thisRenderer.extrapolation, true);
-    if (!params.paintGame || !extrapolatedRoomState.gameState || !rendererObj)
-      return;
+    if (!extrapolatedRoomState.gameState)
+      return RenderResult.skipped;
 
     // 1. Synchronize dimensions and capture final LOGICAL values immediately
     const currentDims = resizeCanvas();
@@ -1274,7 +1317,12 @@ export default function(API, params){
       }
     }
     rendererObj.render({container: stage});
+    if (queue?.onSubmittedWorkDone) {
+      renderBlockedByGPU = false;
+      _trackSubmittedFrame(queue);
+    }
     params.onRequestAnimationFrame?.(extrapolatedRoomState);
+    return RenderResult.rendered;
   }
 
   var messageChannel = new MessageChannel();
@@ -1283,11 +1331,16 @@ export default function(API, params){
 
   messageChannel.port1.onmessage = async function() {
     if (!isLoopRunning) return;
+    if (customLoopId != null) {
+      clearTimeout(customLoopId);
+      customLoopId = null;
+    }
 
     var now = performance.now();
+    const bypassFrameLimit = forceImmediateRender;
 
     // If targetFPS > 0, we prioritize that. 
-    if (thisRenderer.targetFPS > 0) {
+    if (thisRenderer.targetFPS > 0 && !bypassFrameLimit) {
       if (now < targetFrameTime) {
         // Not time yet? Use a hybrid approach to save CPU
         var remaining = targetFrameTime - now;
@@ -1307,8 +1360,16 @@ export default function(API, params){
     }
 
     renderFromCustomLoop = true;
-    _doRender();
+    thisRenderer.room._flushPendingKeyState?.();
+    const renderResult = _doRender();
     renderFromCustomLoop = false;
+    if (renderResult === RenderResult.rendered) {
+      forceImmediateRender = false;
+      if (thisRenderer.targetFPS > 0 && bypassFrameLimit)
+        targetFrameTime = now + 1000 / thisRenderer.targetFPS;
+    }
+    if (renderResult === RenderResult.blocked)
+      return;
 
     // Continue the loop
     messageChannel.port2.postMessage(null);
@@ -1324,14 +1385,27 @@ export default function(API, params){
     _scheduleNextTick();
   }
 
+  function _requestImmediateRender() {
+    if (!isLoopRunning)
+      return;
+    forceImmediateRender = true;
+    if (customLoopId != null) {
+      clearTimeout(customLoopId);
+      customLoopId = null;
+    }
+    messageChannel.port2.postMessage(null);
+  }
+
   function _startCustomLoop() {
     if (isLoopRunning) return;
+    _resetFrameThrottleState();
     isLoopRunning = true;
     _scheduleNextTick();
   }
 
   function _stopCustomLoop() {
     isLoopRunning = false;
+    _resetFrameThrottleState();
     if (customLoopId != null) {
       clearTimeout(customLoopId);
       customLoopId = null;
@@ -1340,9 +1414,13 @@ export default function(API, params){
 
   this.render = function(){ // render logic here. called inside requestAnimationFrame callback
     // When custom loop is active, skip rAF-triggered renders to avoid double-rendering
-    if (customLoopId != null && !renderFromCustomLoop)
+    if (isLoopRunning && !renderFromCustomLoop)
       return;
     _doRender();
+  };
+
+  this.requestImmediateRender = function() {
+    _requestImmediateRender();
   };
 
   // Start the custom render loop once the renderer is ready
