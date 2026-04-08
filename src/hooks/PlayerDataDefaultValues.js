@@ -18,7 +18,7 @@ export default {
       gain: 1,
     },
     renderer: {
-      webgpu: true,
+      webGPU: true,
       discLineWidth: 4,
       generalLineWidth: 3,
       resolutionScale: 1,

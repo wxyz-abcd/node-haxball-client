@@ -6,7 +6,7 @@ export default function(API, params){
     name: "PIXI",
     version: "1.0",
     author: "abc & JerryOldson",
-    description: `This is the defaultRenderer implemented using the pixi.js renderer which also has webgl/webgpu capabilities.`
+    description: `This is the defaultRenderer implemented using the pixi.js renderer which also has webgl/webGPU capabilities.`
   });
 
   // parameters are exported so that they can be edited outside this class.
@@ -1281,7 +1281,7 @@ export default function(API, params){
   var isLoopRunning = false;
   var targetFrameTime = 0;
 
-  messageChannel.port1.onmessage = function() {
+  messageChannel.port1.onmessage = async function() {
     if (!isLoopRunning) return;
 
     var now = performance.now();
