@@ -233,7 +233,26 @@ export default function Game({ roomRef, usingCustomAPI }) {
         if (!f.isCustom) {
           chatApi.receiveNotice("Can't store default stadium.");
         } else {
-          chatApi.receiveNotice("Not implemented to keep the web examples simple.");
+          const request = window.indexedDB.open("stadiums", 1);
+          request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains("stadiums")) {
+              db.createObjectStore("stadiums", { autoIncrement: true });
+            }
+          };
+          request.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction(["stadiums"], "readwrite");
+            const objectStore = transaction.objectStore("stadiums");
+            const addRequest = objectStore.add(API.Utils.exportStadium(f), );
+            addRequest.onsuccess = function (event) {
+              chatApi.receiveNotice("Stadium stored successfully.");
+            };
+          };
+          request.onerror = function (event) {
+            chatApi.receiveNotice("Error occurred while storing stadium.");
+          };
+          //chatApi.receiveNotice("Not implemented to keep the web examples simple.");
         }
         break;
       default:
@@ -373,7 +392,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
       const team = API.Impl.Core.Team.byId[teamId];
       if (playerObj)
         chatApi.receiveNotice(
-          `${moved.name} was moved to a team team by ${playerObj.name}`
+          `${moved.name} was moved to ${team.name} by ${playerObj.name}`
         );
     };
     room.onAfterPlayerChat = (id, message) => {

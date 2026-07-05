@@ -2,10 +2,16 @@ import { useState } from "react"
 import { downloadFile } from "../../../../utils/downloadFile.js";
 
 function StadiumPickPopup({ room, showPopup }) {
-    const [stadiumSelected, setStadiumSelected] = useState(null)
-    console.log(stadiumSelected)
+    const [stadiumSelected, setStadiumSelected] = useState(null);
+    const [stadiumList, setStadiumList] = useState([]);
     const handlePick = () => {
-        room.setCurrentStadium(stadiumSelected)
+        let stadiumObj;
+        if (typeof stadiumSelected == "string") {
+            stadiumObj = window.API.Utils.parseStadium(stadiumSelected);
+        } else {
+            stadiumObj = stadiumSelected;
+        }
+        room.setCurrentStadium(stadiumObj)
         showPopup(null)
     }
 
@@ -23,18 +29,51 @@ function StadiumPickPopup({ room, showPopup }) {
         reader.readAsText(selectedFile);
     }
 
-const handleExport = () => {
-     const stadiumHBS = window.API.Utils.exportStadium(stadiumSelected);
-     downloadFile(stadiumSelected.name+'.hbs', 'text/plain', stadiumHBS)
-}
+    const handleExport = () => {
+        const stadiumHBS = window.API.Utils.exportStadium(stadiumSelected);
+        downloadFile(stadiumSelected.name+'.hbs', 'text/plain', stadiumHBS)
+    }
+
+    const getStadiumList = () => {
+        const defaultStadiums = window.API.Utils.getDefaultStadiums();
+        const request = window.indexedDB.open("stadiums", 1);
+        request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains("stadiums")) {
+              db.createObjectStore("stadiums", { autoIncrement: true });
+            }
+        };
+        request.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction("stadiums", "readonly");
+            const objectStore = transaction.objectStore("stadiums");
+            const getAllRequest = objectStore.getAll();
+            getAllRequest.onsuccess = function (event) {
+                const customStadiums = event.target.result;
+                const parsedCustomStadiums = customStadiums.map((stadium) => {
+                    if (typeof stadium == "string") {
+                        return window.API.Utils.parseStadium(stadium);
+                    } else {
+                        return stadium;
+                    }
+                });
+                const allStadiums = [...defaultStadiums, ...parsedCustomStadiums];
+                setStadiumList(allStadiums);
+            }
+        };
+    };
+
+    useState(() => {
+        getStadiumList();
+    }, [])
 
 return (
     <div className="dialog pick-stadium-view">
         <h1>Pick a stadium</h1>
         <div className="splitter">
             <div className="list ps">
-                {window.API.Utils.getDefaultStadiums().map((stadium) =>
-                    <div onClick={() => setStadiumSelected(stadium)} className="elem">{stadium.name}</div>
+                {stadiumList.map((stadium, index) =>
+                    <div onClick={() => setStadiumSelected(stadium)} className={index > 9 ? "elem custom" : "elem"}>{stadium.name}</div>
                 )}
             </div>
             <div className="buttons">

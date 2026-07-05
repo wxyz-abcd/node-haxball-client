@@ -24,4 +24,7 @@ nw.Window.open(openPath, {}, function(win) {
         console: w.console,
     });
     w.API = API;
+    API.Impl.Core.Team.blue.name = "Blue";
+    API.Impl.Core.Team.red.name = "Red";
+    API.Impl.Core.Team.spec.name = "Spectators";
 });
