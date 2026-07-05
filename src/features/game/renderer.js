@@ -397,7 +397,8 @@ export default function(API, params){
         });
       }
       else if (bgType==2){
-        const gradientFill = new FillGradient(0, 0, 0, 2*bgHeight), h = Math.floor((bgHeight*2)/15);
+        const safeHeight = Number.isFinite(bgHeight) && bgHeight > 0 ? bgHeight : 1;
+        const gradientFill = new FillGradient(0, 0, 0, 2*bgHeight), h = Math.max(1, Math.floor((safeHeight*2)/15))
         for (var i=0; i<=2*h; i++)
           gradientFill.addColorStop((i+1-((i+1)%2))/(2*h), i%4<2 ? 0x6d6d6d : 0xe9cc6e);
         gr.x = -10000
