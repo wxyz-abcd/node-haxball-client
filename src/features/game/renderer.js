@@ -375,6 +375,7 @@ export default function(API, params){
         gr.fill({
           texture: texture1,
           matrix: new Matrix().scale(2, 2),
+          textureSpace: 'global'
         });
         gr.stroke({
           color: 0xc7e6bd,
@@ -407,6 +408,7 @@ export default function(API, params){
         gr.fill({
           texture: texture3,
           matrix: new Matrix().scale(2, 2),
+          textureSpace: 'global'
         });
         const gr2 = new Graphics();
         gr2.x = 10000-bgWidth;
@@ -415,6 +417,7 @@ export default function(API, params){
         gr2.fill({
           texture: texture2,
           matrix: new Matrix().scale(2, 2),
+          textureSpace: 'global'
         });
         gr2.stroke({
           color: 0xe9cc6e,
@@ -1166,7 +1169,7 @@ export default function(API, params){
       document.body.appendChild(e);
       return e;
     }
-    scriptElem = loadScript("https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.6.6/pixi.min.js", ()=>{
+    scriptElem = loadScript("https://cdn.jsdelivr.net/npm/pixi.js@8.19.0/dist/pixi.min.js", ()=>{
       rendererObj = thisRenderer.webGPU ? new PIXI.WebGPURenderer() : new PIXI.WebGLRenderer();
       texture1 = PIXI.Texture.from(params.images?.grass);
       texture2 = PIXI.Texture.from(params.images?.concrete);
