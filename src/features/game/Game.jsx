@@ -437,6 +437,9 @@ export default function Game({ roomRef, usingCustomAPI }) {
 
     handleActivity();
     window.addEventListener('mousemove', handleActivity);
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || e.key === 'Tab' || e.key === 'Enter') handleActivity();
+    });
 
     return () => {
       clearTimeout(timer);
@@ -444,7 +447,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
     };
   }, [gameStarted]);
 
-  const uiClass = gameStarted && !uiVisible ? "auto-hide-ui hidden" : "auto-hide-ui";
+  const uiClass = gameStarted && !uiVisible ? "auto-hide-ui hidden" : "";
   const viewClass = gameStarted && !uiVisible ? "game-view hide-cursor" : "game-view";
 
   return (
@@ -458,7 +461,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
         </div>
       </div>
 
-      <div className={`top-section ${uiClass}`} style={{zIndex: showRoomView ? 2 : 0}}>
+      <div className={`top-section`} style={{zIndex: showRoomView ? 2 : 0}}>
         {showRoomView ? (
           <RoomHeader
             roomRef={roomRef}
@@ -496,7 +499,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
         <div className="bottom-spacer" />
       </div>
 
-      <div className={`buttons ${uiClass}`} style={{zIndex:2}}>
+      <div className={`buttons`} style={{zIndex:2}}>
         <SoundButton player={player} initialVolume={player.sound.gain} soundInstance={soundInstanceRef.current} setPlayerField={setPlayerField}></SoundButton>
         <button data-hook="menu" disabled={!gameStarted} onClick={handleMenu}><i className="icon-menu" />Menu<span className="tooltip">Toggle room menu [Escape]</span></button>
         <button data-hook="settings" onClick={handleSettings}><i className="icon-cog" /></button>
