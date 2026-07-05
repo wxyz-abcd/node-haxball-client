@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export default function Recaptcha({ onSuccess }) {
+export default function Recaptcha({ onSuccess, roomData }) {
   //const wvRef = useRef(null);
   const ifRef = useRef(null), cbRef = useRef(null);
   /*const webviewScriptJS = () => `
@@ -99,6 +99,23 @@ export default function Recaptcha({ onSuccess }) {
   return (
       <iframe style={{visibility: 'hidden', width: '100%', height: '100%'}} ref={ifRef} src="https://www.haxball.com/headlesstoken" /*nwdisable nwfaketop*/ onLoad={()=>{
         try{
+          const response = ifRef.current.contentDocument.querySelector(".g-recaptcha-response");
+          if (roomData) {
+            const form = ifRef.current.contentDocument.querySelector("form");
+            form.action = "https://www.haxball.com/rs/api/client";
+            response.name = "rcr";
+            let input = form.querySelector('input[name="room"]');
+
+            if (!input) {
+              input = document.createElement("input");
+              input.type = "hidden";
+              input.name = "room";
+              form.appendChild(input);
+            }
+            input.value = roomData.roomId;
+
+            form.appendChild(input);
+          }
           ifRef.current.contentDocument.body.style.margin = 0;
           ifRef.current.contentDocument.body.children[1].children[1].remove() // <br/>
           const submitButton = ifRef.current.contentDocument.body.children[1].children[1];

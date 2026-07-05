@@ -1,3 +1,6 @@
+# Game files
+themes/*.json
+
 # NW data
 .nw-local-data
 
