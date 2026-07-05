@@ -19,7 +19,7 @@
     "transparent": true,
     "frame": true
   },
-  "chromium-args": "--allow-file-access-from-files --disable-web-security --disable-frame-rate-limit --disable-gpu-vsync --force-gpu-rasterization --ignore-gpu-blocklist --enable-zero-copy",
+  "chromium-args": "--allow-file-access-from-files --disable-web-security --disable-frame-rate-limit --disable-gpu-vsync --force-gpu-rasterization --ignore-gpu-blocklist --enable-zero-copy --force_high_performance_gpu",
   "node-remote": "<all_urls>",
   "dependencies": {
     "node-haxball": "^2.2.0",

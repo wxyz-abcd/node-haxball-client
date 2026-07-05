@@ -1,5 +1,8 @@
-import { Resizable } from "re-resizable";
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+
+const MIN_CHAT_HEIGHT = 33;
+const MAX_CHAT_HEIGHT = 400;
+
 export default React.memo(function ChatBox({
   chatRows,
   onChatSubmit,
@@ -10,6 +13,58 @@ export default React.memo(function ChatBox({
   player
 }) {
   const [inputValue, setInputValue] = useState("");
+  const [chatHeight, setChatHeight] = useState(height);
+  const [isResizing, setIsResizing] = useState(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+  const playerRef = useRef(player);
+  const setPlayerFieldRef = useRef(setPlayerField);
+
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+
+  useEffect(() => {
+    setPlayerFieldRef.current = setPlayerField;
+  }, [setPlayerField]);
+
+  useEffect(() => {
+    setChatHeight(height);
+  }, [height]);
+
+  useEffect(() => {
+    if (!isResizing) return undefined;
+
+    const handlePointerMove = (event) => {
+      const nextHeight = Math.min(
+        Math.max(startHeightRef.current + startYRef.current - event.clientY, MIN_CHAT_HEIGHT),
+        MAX_CHAT_HEIGHT
+      );
+      setChatHeight(nextHeight);
+    };
+
+    const handlePointerUp = (event) => {
+      const nextHeight = Math.min(
+        Math.max(startHeightRef.current + startYRef.current - event.clientY, MIN_CHAT_HEIGHT),
+        MAX_CHAT_HEIGHT
+      );
+      setChatHeight(nextHeight);
+      setPlayerFieldRef.current("chat", { ...playerRef.current.chat, height: nextHeight });
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp, { once: true });
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
 
   const inputKeyDown = (e) => {
     if (e.code === "Enter" || e.code === "NumpadEnter") {
@@ -18,26 +73,25 @@ export default React.memo(function ChatBox({
     }
   };
 
-  const resizeStop = (event, from, element) => {
-    setPlayerField("chat", {...player.chat, height: parseInt(element.style.height, 10) });
+  const resizeStart = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentHeight = typeof chatHeight === "number"
+      ? chatHeight
+      : parseInt(chatHeight, 10) || MIN_CHAT_HEIGHT;
+
+    startYRef.current = event.clientY;
+    startHeightRef.current = currentHeight;
+    setIsResizing(true);
+    document.body.style.cursor = "n-resize";
+    document.body.style.userSelect = "none";
   };
+
   return (
-    <Resizable
-      defaultSize={{
-        height: height,
-      }}
-      minHeight={"33px"}
-      maxHeight={"400px"}
-      enable={{
-        top: true,
-      }}
-      handleComponent={{
-        top: <div data-hook="drag" className="drag"></div>,
-      }}
-      className="chatbox-view"
-      onResizeStop={resizeStop}
-    >
+    <div className={`chatbox-view${isResizing ? " dragging" : ""}`} style={{ height: `${chatHeight}px` }}>
       <div tabIndex={-1} className="chatbox-view-contents">
+        <div data-hook="drag" className="drag" onPointerDown={resizeStart}></div>
         <div data-hook="log" className="log subtle-thin-scrollbar">
           <div className="log-contents">
             {chatRows.map(({ type, className, content, color, font }, i) => {
@@ -98,6 +152,6 @@ export default React.memo(function ChatBox({
           />
         </div>
       </div>
-    </Resizable>
+    </div>
   );
 });

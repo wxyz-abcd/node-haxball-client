@@ -68,15 +68,34 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const chatInput = useRef(null);
   const soundInstanceRef = useRef(null);
   const soundRef = useRef(null);
+  const [uiVisible, setUiVisible] = useState(true);
+  let timer;
+  const handleActivity = () => {
+    setUiVisible(true);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+    setUiVisible(false);
+    }, 3000);
+  };
   const chatApi = useMemo(()=>({
-    receiveChatMessage: (nick, msg) => setChatRows(prev => [...prev, { type: 0, content: nick + ": " + msg }]),
-    receiveAnnouncement: (msg, color, style) => setChatRows(prev => [...prev, { type: 1, content: msg, color, font: style }]),
-    receiveNotice: (msg) => setChatRows(prev => [...prev, { type: 0, content: msg, className: "notice" }]),
+    receiveChatMessage: (nick, msg) => {
+      setChatRows(prev => [...prev, { type: 0, content: nick + ": " + msg }])
+      handleActivity();
+    },
+    receiveAnnouncement: (msg, color, style) => {
+      setChatRows(prev => [...prev, { type: 1, content: msg, color, font: style }])
+      handleActivity();
+    },
+    receiveNotice: (msg) => {
+      setChatRows(prev => [...prev, { type: 0, content: msg, className: "notice" }]);
+      handleActivity();
+    },
     focusOnChat: () => {
       if (document.activeElement === chatInput.current) canvasRef.current.focus();
       else chatInput.current.focus();
+      handleActivity();
     },
-    blurChat: () => chatInput.current.blur()
+    blurChat: () => chatInput.current.blur(),
   }), []);
 
   const analyzeChatCommand = useCallback((msg) => {
@@ -418,31 +437,16 @@ export default function Game({ roomRef, usingCustomAPI }) {
     roomRef.current?.setTimeLimit(value);
   }, [roomRef]);
 
-  const [uiVisible, setUiVisible] = useState(true);
-
   useEffect(() => {
     if (!gameStarted) {
       setUiVisible(true);
       return;
     }
-    
-    let timer;
-    const handleActivity = () => {
-      setUiVisible(true);
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setUiVisible(false);
-      }, 3000);
-    };
 
     handleActivity();
     window.addEventListener('mousemove', handleActivity);
-    document.addEventListener('keydown', (e) => {
-      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || e.key === 'Tab' || e.key === 'Enter') handleActivity();
-    });
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('mousemove', handleActivity);
     };
   }, [gameStarted]);
