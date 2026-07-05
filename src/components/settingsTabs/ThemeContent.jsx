@@ -84,10 +84,10 @@ export default function ThemeContent() {
   // ── Background image toggle ──
   const handleBgImageToggle = useCallback(() => {
     setEditVars(prev => {
-      const current = prev['--bg-body-image'] || 'url("../images/bg.png")';
+      const current = prev['--bg-body-image'] || 'none';
       const updated = {
         ...prev,
-        '--bg-body-image': current === 'none' ? 'url("../images/bg.png")' : 'none',
+        '--bg-body-image': 'none',
       };
       previewTheme(expandThemeVariables(updated));
       return updated;

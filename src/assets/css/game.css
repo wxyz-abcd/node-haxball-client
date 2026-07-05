@@ -3450,7 +3450,8 @@ body {
     font-size: 14px;
     color: var(--text-primary);
     background-color: var(--bg-body);
-    background: var(--bg-body-color) var(--bg-body-image) fixed
+    background: var(--bg-body-color) var(--bg-body-image) fixed;
+    background-size: cover;
 }
 
 a {

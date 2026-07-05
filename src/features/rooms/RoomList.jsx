@@ -112,19 +112,22 @@ function RoomList() {
     });
     if (!input) return;
     const trimmed = input.trim();
-    const match = trimmed.match(/\?c=([^&]+)/);
-    const roomId = match ? match[1] : trimmed;
+    const idMatch = trimmed.match(/\?c=([^&]+)/);
+    const passwordMatch = trimmed.match(/&p=([^&]+)/);
+    const roomId = idMatch ? idMatch[1] : trimmed;
     if (!roomId) return;
+    
+    let password = null;
+    if (passwordMatch && passwordMatch.length > 0 &&passwordMatch[1]) {
+      password = await promptUser({
+        title: "Room password",
+        message: "Enter password below.\nLeave empty if none.",
+        placeholder: "Password",
+        inputType: "password",
+        submitText: "Join",
+      });
+    }
 
-    // Ask for password (optional – user can leave blank)
-    const password = await promptUser({
-      title: "Room password",
-      message: "If the room has a password, enter it below.\nLeave empty if none.",
-      placeholder: "Password (optional)",
-      inputType: "password",
-      submitText: "Join",
-    });
-    if (password === null) return; // cancelled
     navigate(`/JoinRoom/${roomId}`, { state: { password: password || null } });
   }, [navigate, promptUser]);
 
