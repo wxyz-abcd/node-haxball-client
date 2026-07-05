@@ -2,7 +2,7 @@
   "name": "node-haxball-client",
   "main": "main.js",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && nw . --user-data-dir=.nw-local-data development\"",
@@ -11,7 +11,7 @@
     "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=sdk --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
     "dist:all": "npm run dist:win && npm run dist:linux",
     "zip:win": "npm run dist:win && powershell -Command \"Compress-Archive -Path '../node-haxball-client-out/win/*' -DestinationPath '../node-haxball-client-out/node-haxball-client-win.zip' -Force\"",
-    "zip:linux": "npm run dist:linux && powershell -Command \"Compress-Archive -Path '../node-haxball-client-out/linux/*' -DestinationPath '../node-haxball-client-out/node-haxball-client-linux.zip' -Force\"",
+    "zip:linux": "npm run dist:linux && cd ../node-haxball-client-out && zip -r node-haxball-client-linux.zip linux",
     "lint": "eslint ."
   },
   "window": {
