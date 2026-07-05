@@ -52,7 +52,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
     room._queuePendingKeyState = (state) => {
         room._pendingKeyState = state;
         room._hasPendingKeyState = true;
-        room.renderer?.requestImmediateRender?.();
+        //room.renderer?.requestImmediateRender?.();
     };
     room._flushPendingKeyState = () => {
         if (!room._hasPendingKeyState) return false;
