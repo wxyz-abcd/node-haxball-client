@@ -1169,14 +1169,21 @@ export default function(API, params){
       document.body.appendChild(e);
       return e;
     }
-    scriptElem = loadScript("https://cdn.jsdelivr.net/npm/pixi.js@8.19.0/dist/pixi.min.js", ()=>{
-      rendererObj = thisRenderer.webGPU ? new PIXI.WebGPURenderer() : new PIXI.WebGLRenderer();
-      texture1 = PIXI.Texture.from(params.images?.grass);
-      texture2 = PIXI.Texture.from(params.images?.concrete);
-      texture3 = PIXI.Texture.from(params.images?.concrete2);
-      texture4 = PIXI.Texture.from(params.images?.typing);
-      thisRenderer.followPlayerId = thisRenderer.room?.currentPlayerId;
-      rendererObj.init({
+
+    async function isWebGPUSupported(){
+      if (!('gpu' in navigator)) return false;
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        return !!adapter;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function createRenderer(){
+      const wantsWebGPU = thisRenderer.webGPU && await isWebGPUSupported();
+
+      const rendererOptions = {
         view: params.canvas,
         antialias: true,
         resolution: window.devicePixelRatio * thisRenderer.resolutionScale,
@@ -1184,8 +1191,30 @@ export default function(API, params){
         backgroundColor: "#1099bb",
         forceFXAA: true,
         legacy: false,
-        powerPreference: "high-performance", // "high-performance", "low-power"
-      }).then(_regenerateNecessaryObjects);
+        powerPreference: "high-performance",
+      };
+
+      rendererObj = wantsWebGPU ? new PIXI.WebGPURenderer() : new PIXI.WebGLRenderer();
+
+      try {
+        await rendererObj.init(rendererOptions);
+      } catch (e) {
+        console.warn("WebGL fallback", e);
+        rendererObj = new PIXI.WebGLRenderer();
+        await rendererObj.init(rendererOptions);
+      }
+
+      _regenerateNecessaryObjects();
+    }
+    console.log("current path", window.location.pathname);
+    scriptElem = loadScript("pixi/pixi.min.js", ()=>{
+      texture1 = PIXI.Texture.from(params.images?.grass);
+      texture2 = PIXI.Texture.from(params.images?.concrete);
+      texture3 = PIXI.Texture.from(params.images?.concrete2);
+      texture4 = PIXI.Texture.from(params.images?.typing);
+      thisRenderer.followPlayerId = thisRenderer.room?.currentPlayerId;
+
+      createRenderer();
     });
   };
 
