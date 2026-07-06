@@ -1206,7 +1206,7 @@ export default function(API, params){
 
       _regenerateNecessaryObjects();
     }
-    console.log("current path", window.location.pathname);
+    
     scriptElem = loadScript("pixi/pixi.min.js", ()=>{
       texture1 = PIXI.Texture.from(params.images?.grass);
       texture2 = PIXI.Texture.from(params.images?.concrete);
