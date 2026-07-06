@@ -2,6 +2,11 @@
 const WebSocket = require("ws");
 
 const isDev = nw.App.argv.includes("development");
+if (isDev) {
+  const e = document.createElement('script');
+  e.src = 'http://localhost:8097';
+  document.head.appendChild(e);
+}
 const openPath = isDev
   ? "http://localhost:5173"
   : "dist/index.html";
