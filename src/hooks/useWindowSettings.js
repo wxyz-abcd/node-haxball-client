@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { setActualDisplayResolution, restoreActualDisplayResolution, restoreActualDisplayResolutionSync } from "../utils/screenResolution";
+import { usePlayerData } from "./usePlayerData";
 
-export function useWindowSettings(player) {
+export function useWindowSettings() {
   const [nativeResolution, setNativeResolution] = useState(null);
-  
+  const { player } = usePlayerData();
   const lastSettingsRef = useRef({ resolution: null, fullscreen: null });
   const displayStateRef = useRef('game');
   const isChangingRef = useRef(false);

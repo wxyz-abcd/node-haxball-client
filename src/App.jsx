@@ -12,7 +12,7 @@ import { useWindowSettings } from "./hooks/useWindowSettings";
 
 function App() {
   const { player } = usePlayerData();
-  useWindowSettings(player);
+  useWindowSettings();
 useEffect(() => {
   const API = window.API;
   if (!API || !player?.language) return;

@@ -24,8 +24,9 @@ class GameKeysHandler {
 
         this.pressKey = (key) => {
             const value = keyValue(key);
-            if (!value) return;
+            if (!value) return false;
             this.queueKeyState(this.keyState | value);
+            return true;
         };
 
         this.releaseKey = (key) => {
@@ -79,6 +80,8 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
 
     const handleKeyDown = (e) => {
         room._lastInputTime = performance.now();
+        if (document.activeElement == chatInput) return;
+        if (gameKeysHandler.pressKey(e.code)) return;
         switch (e.code) {
             case 'Tab':
             case 'Enter':
@@ -105,9 +108,6 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
                 var playerRenderer = getPlayerField("renderer")
                 setPlayerField("renderer", { ...playerRenderer, ["zoomCoeff"]: zoomCoeff });
                 break;
-            default:
-                if (document.activeElement == chatInput) return;
-                gameKeysHandler.pressKey(e.code);
         }
     };
 

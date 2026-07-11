@@ -72,6 +72,10 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const [rendererObj, setRendererObj] = useState(null);
   const timerRef = useRef(null);
   const keysHandlerRef = useRef(null);
+  const playerRef = useRef(player);
+  useEffect(() => {
+    playerRef.current = player;
+  });
 
   const requestLock = () => {
     if (!player.chat.alwaysHide) return;
@@ -99,8 +103,8 @@ export default function Game({ roomRef, usingCustomAPI }) {
   }, [player.chat.alwaysHide, showRoomView]);
 
   const getPlayerField = useCallback((field) => {
-    return player[field];
-  }, [player]);
+    return playerRef.current[field];
+  }, []);
 
   const chatApi = useMemo(()=>({
     receiveChatMessage: (nick, msg) => {
