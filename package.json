@@ -2,7 +2,7 @@
   "name": "node-haxball-client",
   "main": "main.js",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && nw . --user-data-dir=.nw-local-data development\"",
