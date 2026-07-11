@@ -2,16 +2,11 @@ class GameKeysHandler {
     constructor(playerKeys, room) {
         this.keyState = room.getKeyState?.() ?? 0;
         this.room = room;
-
-        const keys = new Map();
-        Object.entries(playerKeys).forEach(([action, keyList]) => {
-            keyList.forEach((key) => {
-                keys.set(key, action.charAt(0).toUpperCase() + action.slice(1));
-            });
-        });
+        this.keys = new Map();
+        this.setKeys(playerKeys);
 
         const keyValue = (key) => {
-            switch (keys.get(key)) {
+            switch (this.keys.get(key)) {
                 case "Down": return 2;
                 case "Kick": return 16;
                 case "Left": return 4;
@@ -43,6 +38,15 @@ class GameKeysHandler {
             if (this.keyState === 0) return;
             this.queueKeyState(0);
         };
+        this.keyValue = keyValue;
+    }
+    setKeys(playerKeys) {
+        this.keys.clear();
+        Object.entries(playerKeys).forEach(([action, keyList]) => {
+            keyList.forEach((key) => {
+                this.keys.set(key, action.charAt(0).toUpperCase() + action.slice(1));
+            });
+        });
     }
 };
 
@@ -152,8 +156,8 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
         kill: () => {
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
-            window.addEventListener("mousedown", handleMouseDown);
-            window.addEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("mousedown", handleMouseDown);
+            window.removeEventListener("mouseup", handleMouseUp);
             canvas.removeEventListener("contextmenu", handleContextMenu);
             canvas.removeEventListener("blur", handleBlur);
             canvas.removeEventListener("wheel", handleWheel);
@@ -163,6 +167,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
             delete room._hasPendingKeyState;
             delete room._queuePendingKeyState;
             delete room._flushPendingKeyState;
-        }
+        },
+        setKeys: (newKeys) => gameKeysHandler.setKeys(newKeys),
     };
 }

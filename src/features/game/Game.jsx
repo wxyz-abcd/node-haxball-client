@@ -71,6 +71,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const [uiVisible, setUiVisible] = useState(false);
   const [rendererObj, setRendererObj] = useState(null);
   const timerRef = useRef(null);
+  const keysHandlerRef = useRef(null);
 
   const requestLock = () => {
     if (!player.chat.alwaysHide) return;
@@ -120,7 +121,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
       handleActivity();
     },
     blurChat: () => chatInput.current.blur(),
-  }), []);
+  }), [handleActivity]);
 
   const analyzeChatCommand = useCallback((msg) => {
     if (!msg || msg.charAt(0) !== "/") return false;
@@ -467,16 +468,21 @@ export default function Game({ roomRef, usingCustomAPI }) {
     };
     room.onAfterScoreLimitChange = (value) => setScoreLimit(value);
     room.onAfterTimeLimitChange = (value) => setTimeLimit(value);
-  }, [player, roomRef, soundRef]);
+  }, [API.Impl.Core.Team.byId, chatApi, player.sound, roomRef, soundRef]);
 
   useEffect(() => {
     const room = roomRef.current;
     const canvas = canvasRef.current;
     const chatInputEl = chatInput.current;
     const keysHandler = setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi, player.keys, canvas, chatInputEl, setPlayerField, getPlayerField, rendererObj);
+    keysHandlerRef.current = keysHandler;
     return () => { keysHandler.kill(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rendererObj]);
+
+  useEffect(() => {
+    keysHandlerRef.current?.setKeys(player.keys);
+  }, [player.keys]);
 
   const changeScoreLimit = useCallback((value) => {
     setScoreLimit(value);
