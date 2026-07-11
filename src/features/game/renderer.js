@@ -1564,6 +1564,7 @@ export default function(API, params){
     scale *= zoomCoeff;
     thisRenderer.zoomCoeff = scale;
     _regenerateNecessaryObjects();
+    return scale;
   };
 
   this.zoomOut = function(pixelCoordX, pixelCoordY, zoomCoeff){
@@ -1573,13 +1574,27 @@ export default function(API, params){
     scale /= zoomCoeff;
     thisRenderer.zoomCoeff = scale;
     _regenerateNecessaryObjects();
+    return scale;
   };
 
   this.onWheel = function(event){
     if (event.deltaY<0)
-      thisRenderer.zoomIn(event.offsetX, event.offsetY, thisRenderer.wheelZoomCoeff);
+      return thisRenderer.zoomIn(event.offsetX, event.offsetY, thisRenderer.wheelZoomCoeff);
     else
-      thisRenderer.zoomOut(event.offsetX, event.offsetY, thisRenderer.wheelZoomCoeff);
+      return thisRenderer.zoomOut(event.offsetX, event.offsetY, thisRenderer.wheelZoomCoeff);
+  };
+
+  this.setZoom = function(pixelCoordX, pixelCoordY, targetZoom) {
+      var k = (1 - scale / targetZoom) / scale;
+
+      origin.x += k * (pixelCoordX - (rendererObj ? rendererObj.screen.width / 2 : params.canvas.width / 2));
+      origin.y += k * (pixelCoordY - (rendererObj ? rendererObj.screen.height / 2 : params.canvas.height / 2));
+
+      scale = targetZoom;
+      thisRenderer.zoomCoeff = scale;
+      _regenerateNecessaryObjects();
+
+      return scale;
   };
 
   this.onLanguageChange = function(abbr, customData){

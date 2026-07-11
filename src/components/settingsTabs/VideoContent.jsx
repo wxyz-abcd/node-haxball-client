@@ -161,7 +161,7 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         onChange={(value) => rendererChanged("resolution", value)}
       />
       <Toggle
-        title={"Use web gpu"}
+        title={"Use WebGPU"}
         value={playerCopy.renderer.webGPU}
         defaultValue={playerDefaultValues.renderer.webGPU}
         onChange={(value) => rendererChanged("webGPU", value)}
@@ -179,6 +179,12 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         onChange={(value) => rendererChanged("showChatIndicators", value)}
       />
       <Toggle
+        title={"Show player avatars"}
+        value={playerCopy.renderer.showAvatars}
+        defaultValue={playerDefaultValues.renderer.showAvatars}
+        onChange={(value) => rendererChanged("showAvatars", value)}
+      />
+      <Toggle
         title={"Show FPS counter"}
         value={playerCopy.renderer.showFPS ?? playerDefaultValues.renderer.showFPS}
         defaultValue={playerDefaultValues.renderer.showFPS}
@@ -190,7 +196,12 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         defaultValue={playerDefaultValues.renderer.showInputLag}
         onChange={(value) => rendererChanged("showInputLag", value)}
       />
-
+      <Toggle
+        title={"Always hide on mouse move"}
+        value={playerCopy.chat.alwaysHide ?? playerDefaultValues.chat.alwaysHide}
+        defaultValue={playerDefaultValues.chat.alwaysHide}
+        onChange={(value) => chatChanged("alwaysHide", value)}
+      />
       <NumericInput
         title={"FPS Limit (0 = unlimited)"}
         min={0}
@@ -198,12 +209,6 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         value={playerCopy.renderer.targetFPS ?? playerDefaultValues.renderer.targetFPS}
         defaultValue={playerDefaultValues.renderer.targetFPS}
         onChange={(value) => rendererChanged("targetFPS", value)}
-      />
-      <Toggle
-        title={"Show player avatars"}
-        value={playerCopy.renderer.showAvatars}
-        defaultValue={playerDefaultValues.renderer.showAvatars}
-        onChange={(value) => rendererChanged("showAvatars", value)}
       />
       <SliderOption
         title={"Resolution scale"}

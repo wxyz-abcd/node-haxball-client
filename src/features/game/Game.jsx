@@ -68,15 +68,39 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const chatInput = useRef(null);
   const soundInstanceRef = useRef(null);
   const soundRef = useRef(null);
-  const [uiVisible, setUiVisible] = useState(true);
-  let timer;
-  const handleActivity = () => {
-    setUiVisible(true);
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-    setUiVisible(false);
-    }, 3000);
+  const [uiVisible, setUiVisible] = useState(false);
+  const [rendererObj, setRendererObj] = useState(null);
+  const timerRef = useRef(null);
+
+  const requestLock = () => {
+    if (!player.chat.alwaysHide) return;
+    const canvas = canvasRef.current;
+    canvas.requestPointerLock();
   };
+
+  const handleActivity = useCallback(() => {
+    clearTimeout(timerRef.current);
+
+    if (player.chat.alwaysHide) {
+      setUiVisible(false);
+      if (showRoomView || document.pointerLockElement === canvasRef.current) return;
+      requestLock();
+    }
+
+    setUiVisible(true);
+
+    if (document.activeElement === chatInput.current) return;
+
+    timerRef.current = setTimeout(() => {
+      if (document.activeElement === chatInput.current) return;
+      setUiVisible(false);
+    }, 3000);
+  }, [player.chat.alwaysHide, showRoomView]);
+
+  const getPlayerField = useCallback((field) => {
+    return player[field];
+  }, [player]);
+
   const chatApi = useMemo(()=>({
     receiveChatMessage: (nick, msg) => {
       setChatRows(prev => [...prev, { type: 0, content: nick + ": " + msg }])
@@ -350,10 +374,16 @@ export default function Game({ roomRef, usingCustomAPI }) {
           images: { grass: imgs[0], concrete: imgs[1], concrete2: imgs[2], typing: imgs[3] },
           onRequestAnimationFrame: () => {}
         });
-        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "targetFPS", "displayMode", "resolution"]
+        setRendererObj(defaultRendererObj);
+        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "showInputLag", "targetFPS", "displayMode", "resolution"]
         for (let i = 0; i < rendererOptions.length; i++) {
             defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
         }
+        defaultRendererObj.setZoom(
+          canvas.width / 2,
+          canvas.height / 2,
+          player.renderer["zoomCoeff"]
+        );
         room.setRenderer(defaultRendererObj);
         room.renderer.extrapolation = player.extrapolation;
         if (player.extrapolation != null) room.renderer.extrapolation = player.extrapolation;
@@ -443,9 +473,10 @@ export default function Game({ roomRef, usingCustomAPI }) {
     const room = roomRef.current;
     const canvas = canvasRef.current;
     const chatInputEl = chatInput.current;
-    const keysHandler = setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi, player.keys, canvas, chatInputEl);
+    const keysHandler = setGameInputs(room, () => setShowRoomView(prev => !prev), chatApi, player.keys, canvas, chatInputEl, setPlayerField, getPlayerField, rendererObj);
     return () => { keysHandler.kill(); };
-  }, [chatApi, player.keys, roomRef, canvasRef, chatInput]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rendererObj]);
 
   const changeScoreLimit = useCallback((value) => {
     setScoreLimit(value);
@@ -464,14 +495,19 @@ export default function Game({ roomRef, usingCustomAPI }) {
 
     handleActivity();
     window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('focus', handleActivity, true);
+    window.addEventListener('blur', handleActivity, true);
 
     return () => {
       window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('focus', handleActivity, true);
+      window.removeEventListener('blur', handleActivity, true);
+      clearTimeout(timerRef.current);
     };
-  }, [gameStarted]);
+  }, [gameStarted, handleActivity]);
 
-  const uiClass = gameStarted && !uiVisible ? "auto-hide-ui hidden" : "";
-  const viewClass = gameStarted && !uiVisible ? "game-view hide-cursor" : "game-view";
+  const uiClass = gameStarted && !uiVisible && !showRoomView ? "auto-hide-ui hidden" : "";
+  const viewClass = gameStarted && !uiVisible && !showRoomView ? "game-view hide-cursor" : "game-view";
 
   return (
     <div tabIndex={-1} className={viewClass} style={{ "--chat-opacity": `${player.chat.opacity}`}}>

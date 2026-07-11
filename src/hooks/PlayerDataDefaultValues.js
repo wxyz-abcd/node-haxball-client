@@ -7,6 +7,7 @@ export default {
     theme: 'classic',
     extrapolation: 0,
     chat: {
+      alwaysHide: false,
       opacity: 0.8,
       height: 200,
     },
@@ -27,9 +28,10 @@ export default {
       showChatIndicators: true,
       showFPS: true,
       showInputLag: true,
-      targetFPS: 0,
+      targetFPS: 80,
       displayMode: 'windowed',
       resolution: 'native',
+      zoomCoeff: 1.0
     },
     keys: {
       up: ["KeyW", "ArrowUp"],
