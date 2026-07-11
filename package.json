@@ -7,8 +7,8 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && nw . --user-data-dir=.nw-local-data development\"",
     "preview": "cross-env vite build && cross-env nw ./ production",
-    "dist:win": "vite build && nwbuild --platform=win --mode=build --flavor=sdk --cacheDir=../nw-cache --outDir=../node-haxball-client-out/win --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
-    "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=sdk --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
+    "dist:win": "vite build && nwbuild --platform=win --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/win --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
+    "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
     "dist:all": "npm run dist:win && npm run dist:linux",
     "zip:win": "npm run dist:win && powershell -Command \"Compress-Archive -Path '../node-haxball-client-out/win/*' -DestinationPath '../node-haxball-client-out/node-haxball-client-win.zip' -Force\"",
     "zip:linux": "npm run dist:linux && cd ../node-haxball-client-out && zip -r node-haxball-client-linux.zip linux",
