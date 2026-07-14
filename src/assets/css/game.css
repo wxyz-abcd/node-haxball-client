@@ -1849,11 +1849,11 @@ th {
 .chatbox-view {
     box-sizing: border-box;
     height: 150px;
-    min-height: 0;
     width: 800px;
     min-width: 300px;
     position: relative;
-    margin: 0 5px 0 5px
+    margin: 0 auto;
+    left: 50%;
 }
 
 .chatbox-view.dragging {
@@ -1957,7 +1957,8 @@ th {
     border: solid var(--bg-header) 1px;
     overflow-y: auto;
     overflow-x: hidden;
-    max-height: 200px
+    max-height: 200px;
+    z-index: 3000;
 }
 
 .chatbox-view-contents>.autocompletebox>div {
@@ -2090,8 +2091,10 @@ th {
 }
 
 .game-view.chat-bg-full .bottom-section {
+    display: flex;
+    justify-content: center;
     align-items: flex-start;
-    background-color: rgba(var(--bg-primary-rgb), var(--chat-opacity, 1))
+    background-color: rgba(var(--bg-primary-rgb), var(--chat-opacity, 1));
 }
 
 .game-view.chat-bg-full .bottom-section .chatbox-view {

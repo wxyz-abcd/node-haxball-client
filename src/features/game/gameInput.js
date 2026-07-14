@@ -1,9 +1,10 @@
 class GameKeysHandler {
-    constructor(playerKeys, room) {
+    constructor(playerKeys, room, chatInput) {
         this.keyState = room.getKeyState?.() ?? 0;
         this.room = room;
         this.keys = new Map();
         this.setKeys(playerKeys);
+        this.chatInput = chatInput;
 
         const keyValue = (key) => {
             switch (this.keys.get(key)) {
@@ -25,6 +26,7 @@ class GameKeysHandler {
         this.pressKey = (key) => {
             const value = keyValue(key);
             if (!value) return false;
+            if (document.activeElement == chatInput) return;
             this.queueKeyState(this.keyState | value);
             return true;
         };
@@ -76,11 +78,10 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
         7: 2.50
     }
 
-    const gameKeysHandler = new GameKeysHandler(keys, room);
+    const gameKeysHandler = new GameKeysHandler(keys, room, chatInput);
 
     const handleKeyDown = (e) => {
         room._lastInputTime = performance.now();
-        if (document.activeElement == chatInput) return;
         if (gameKeysHandler.pressKey(e.code)) return;
         switch (e.code) {
             case 'Tab':
@@ -100,6 +101,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
             case "Digit5":
             case "Digit6":
             case "Digit7":
+                if (document.activeElement == chatInput) return;
                 var zoomCoeff = room.renderer.setZoom(
                     canvas.width / 2,
                     canvas.height / 2,

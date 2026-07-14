@@ -109,6 +109,14 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
     }));
   };
 
+  const cursorChanged = (field, value) => {
+    setPlayerField("cursor", { ...player.cursor, [field]: value });
+    setPlayerCopy((prev) => ({
+      ...prev,
+      cursor: { ...prev.cursor, [field]: value },
+    }));
+  };
+
   const currentResolutionValue = playerCopy.renderer.resolution || "native";
 
   const isWindows = typeof window.process !== 'undefined' && window.process.platform === 'win32';
@@ -201,6 +209,18 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         value={playerCopy.chat.alwaysHide ?? playerDefaultValues.chat.alwaysHide}
         defaultValue={playerDefaultValues.chat.alwaysHide}
         onChange={(value) => chatChanged("alwaysHide", value)}
+      />
+      <Toggle
+        title={"Never hide chat"}
+        value={playerCopy.chat.neverHide ?? playerDefaultValues.chat.neverHide}
+        defaultValue={playerDefaultValues.chat.neverHide}
+        onChange={(value) => chatChanged("neverHide", value)}
+      />
+      <Toggle
+        title={"Never hide cursor"}
+        value={playerCopy.cursor.neverHide ?? playerDefaultValues.cursor.neverHide}
+        defaultValue={playerDefaultValues.cursor.neverHide}
+        onChange={(value) => cursorChanged("neverHide", value)}
       />
       <NumericInput
         title={"FPS Limit (0 = unlimited)"}

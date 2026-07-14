@@ -203,6 +203,7 @@ export default function(API, params){
   });
 
   var thisRenderer = this, { Point, Team, TeamColors } = Impl.Core;
+  thisRenderer.bottomPaddingPx = 0;
   var defaultTeamColors = [new TeamColors(), new TeamColors(), new TeamColors()];
   defaultTeamColors[1].inner.push(15035990);
   defaultTeamColors[2].inner.push(5671397);
@@ -310,11 +311,17 @@ export default function(API, params){
     });
   }
 
-  function calculateLocationIndicatorValues(pos, viewWidth, viewHeight){
-    var topPadding = 50 / thisRenderer.zoomCoeff;
+  function computeViewportGeometry(stadium, viewWidth, viewHeight, zoom){
+    var topPadding = 50 / zoom;
+    var bottomPadding = (thisRenderer.bottomPaddingPx / (thisRenderer.cssStretchFactor || 1)) / zoom;
+    return { viewWidth, viewHeight, topPadding, bottomPadding };
+  }
+
+  function calculateLocationIndicatorValues(pos, geo) {
+    var { viewWidth, viewHeight, topPadding, bottomPadding } = geo;
     viewWidth = 0.5*viewWidth-25;
     var viewHeightTop = 0.5*viewHeight-25 - topPadding;
-    var viewHeightBottom = 0.5*viewHeight-25;
+    var viewHeightBottom = 0.5*viewHeight-25-bottomPadding;
     var deltaX = pos.x-origin.x;
     var deltaY = pos.y-origin.y;
     var x = origin.x+((deltaX>viewWidth) ? viewWidth : ((deltaX<-viewWidth) ? -viewWidth : deltaX));
@@ -807,12 +814,12 @@ export default function(API, params){
     thisRenderer.room && (typeof PIXI!="undefined") && regenerateNecessaryObjects(PIXI, thisRenderer.room);
   }
 
-  function updateLocationIndicators(roomState, viewWidth, viewHeight){
+  function updateLocationIndicators(roomState, geo){
     function updateLocationIndicator(id, disc){
       var gr = locationIndicatorInfo[id];
       if (!gr)
         return;
-      var vals = disc && calculateLocationIndicatorValues(disc.pos, viewWidth, viewHeight);
+      var vals = disc && calculateLocationIndicatorValues(disc.pos, geo);
       if (vals){
         gr.x = vals.x;
         gr.y = vals.y;
@@ -855,15 +862,16 @@ export default function(API, params){
     textInfo.queue[0].updateInStage(textInfo.time);
   }
   
-  function updateCameraOrigin(gameState, followDisc, viewWidth, viewHeight, deltaTime){
+  function updateCameraOrigin(gameState, followDisc, geo, deltaTime){
     var stadium = gameState.stadium;
-    var topPadding = 50 / thisRenderer.zoomCoeff;
+    var viewWidth = geo.viewWidth, viewHeight = geo.viewHeight;
+    var topPadding = geo.topPadding, bottomPadding = geo.bottomPadding;
     if (thisRenderer.followMode){
       var x, y, pos;
       if (followDisc && stadium.cameraFollow==1){
         pos = followDisc.pos; // player's position
         x = pos.x;
-        y = pos.y;
+        y = pos.y-(bottomPadding-topPadding)/2;
       }
       else{
         pos = gameState.physicsState.discs[0].pos; // ball's position
@@ -873,12 +881,13 @@ export default function(API, params){
           var playerPos = followDisc.pos;
           x = 0.5*(x+playerPos.x);
           y = 0.5*(y+playerPos.y);
+          y -= (bottomPadding - topPadding) / 2;
           var w = 0.5*viewWidth;
           var h = 0.5*viewHeight;
           var minX = playerPos.x-w+50;
-          var minY = playerPos.y-h+50 + topPadding;
+          var minY = playerPos.y-h+50 + bottomPadding;
           var maxX = playerPos.x+w-50;
-          var maxY = playerPos.y+h-50;
+          var maxY = playerPos.y+h-50-topPadding;
           x = x > maxX ? maxX : x < minX ? minX : x;
           y = y > maxY ? maxY : y < minY ? minY : y;
         }
@@ -899,30 +908,29 @@ export default function(API, params){
         origin.x = stadium.width-0.5*viewWidth;
       else if (origin.x-0.5*viewWidth<-stadium.width)
         origin.x = -stadium.width+0.5*viewWidth;
-        
-      if (viewHeight - topPadding > 2*stadium.height)
-        origin.y = topPadding / 2;
-      else if (origin.y+0.5*viewHeight>stadium.height)
-        origin.y = stadium.height-0.5*viewHeight;
+      if (viewHeight - topPadding - bottomPadding > 2 * stadium.height)
+          origin.y = (bottomPadding - topPadding) / 2;
+      else if (origin.y+0.5*viewHeight-bottomPadding>stadium.height)
+          origin.y = stadium.height-0.5*viewHeight+bottomPadding;
       else if (origin.y-0.5*viewHeight + topPadding <-stadium.height)
-        origin.y = -stadium.height+0.5*viewHeight - topPadding;
+          origin.y = -stadium.height+0.5*viewHeight - topPadding;
     }
     // fix all possible camera bugs
     if (Number.isNaN(origin.x))
       origin.x = 0;
     if (Number.isNaN(origin.y))
       origin.y = 0;
-    stage2.x = -origin.x*thisRenderer.zoomCoeff;
-    stage2.y = -origin.y*thisRenderer.zoomCoeff;
+    stage2.x = -origin.x*scale;
+    stage2.y = -origin.y*scale;
     stage3.x = -origin.x;
     stage3.y = -origin.y;
   }
 
-  function update(roomState, viewWidth, viewHeight){
+  function update(roomState, geo){
     const { discs, joints, segments } = roomState.gameState.physicsState;
     if (!customDiscInfo)
       return;
-    updateLocationIndicators(roomState, viewWidth, viewHeight);
+    updateLocationIndicators(roomState, geo);
     updateGamePaused(roomState.gameState);
     segments.forEach((segment, id)=>{
       if (!segment.vis)
@@ -1098,11 +1106,9 @@ export default function(API, params){
     var logicalWidth = parentWidth;
     var logicalHeight = parentHeight;
 
-    // Get renderer configuration (synchronized variables)
     const isBorderless = thisRenderer.displayMode === 'borderless';
     const targetRes = thisRenderer.resolution;
 
-    // Prioritize selected resolution in Borderless to avoid native "flashes"
     if (isBorderless && targetRes && targetRes !== 'native' && targetRes !== 'custom') {
       const parts = targetRes.split('x');
       const w = Number(parts[0]), h = Number(parts[1]);
@@ -1111,19 +1117,18 @@ export default function(API, params){
         logicalHeight = h;
       }
     }
+    thisRenderer.cssStretchFactor = parentHeight / logicalHeight;
 
     var expectedResolution = window.devicePixelRatio * thisRenderer.resolutionScale;
     var expectedPhysicalWidth = Math.round(logicalWidth * expectedResolution);
     var expectedPhysicalHeight = Math.round(logicalHeight * expectedResolution);
     
-    // If dimensions or scale change, force instant synchronization (using expected PHYSICAL width)
     if (needsRecenter || Math.abs(rendererObj.resolution - expectedResolution) > 0.001 || rendererObj.width !== expectedPhysicalWidth || rendererObj.height !== expectedPhysicalHeight){
       const changed = rendererObj.width !== expectedPhysicalWidth || rendererObj.height !== expectedPhysicalHeight || Math.abs(rendererObj.resolution - expectedResolution) > 0.001;
       
       rendererObj.resolution = expectedResolution;
       rendererObj.resize(logicalWidth, logicalHeight);
       
-      // Restore stretched CSS (PIXI.resize() overrides with fixed pixels)
       params.canvas.style.width = '100%';
       params.canvas.style.height = '100%';
       
@@ -1162,6 +1167,11 @@ export default function(API, params){
   };
 
   this.initialize = function(){
+  var bottomEl = document.getElementsByClassName("chatbox-view")[0];
+  var ro = new ResizeObserver(function(entries){
+    thisRenderer.bottomPaddingPx = entries[0].contentRect.height;
+  });
+  ro.observe(bottomEl);
     function loadScript(src, onload){
       var e = document.createElement("script");
       e.onload = onload;
@@ -1316,10 +1326,11 @@ export default function(API, params){
     }
     var viewWidth = currentWidth/zoomCoeff;
     var viewHeight = currentHeight/zoomCoeff;
+    var geo = computeViewportGeometry(stadium, viewWidth, viewHeight, zoomCoeff);
     
     lastRenderTime = time;
-    updateCameraOrigin(extrapolatedRoomState.gameState, followDisc, viewWidth, viewHeight, spf);
-    update(extrapolatedRoomState, viewWidth, viewHeight);
+    updateCameraOrigin(extrapolatedRoomState.gameState, followDisc, geo, spf);
+    update(extrapolatedRoomState, geo);
     if (extrapolatedRoomState.gameState.pauseGameTickCounter<=0){
       updateText(spf);
       renderText();

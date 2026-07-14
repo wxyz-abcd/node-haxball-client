@@ -69,6 +69,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const soundInstanceRef = useRef(null);
   const soundRef = useRef(null);
   const [uiVisible, setUiVisible] = useState(false);
+  const uiVisibleRef = useRef(true);
   const [rendererObj, setRendererObj] = useState(null);
   const timerRef = useRef(null);
   const keysHandlerRef = useRef(null);
@@ -77,6 +78,20 @@ export default function Game({ roomRef, usingCustomAPI }) {
     playerRef.current = player;
   });
 
+  const showUI = useCallback(() => {
+    if (!uiVisibleRef.current) {
+      uiVisibleRef.current = true;
+      setUiVisible(true);
+    }
+  }, []);
+
+  const hideUI = useCallback(() => {
+    if (uiVisibleRef.current) {
+      uiVisibleRef.current = false;
+      setUiVisible(false);
+    }
+  }, []);
+
   const requestLock = () => {
     if (!player.chat.alwaysHide) return;
     const canvas = canvasRef.current;
@@ -84,23 +99,26 @@ export default function Game({ roomRef, usingCustomAPI }) {
   };
 
   const handleActivity = useCallback(() => {
+    if (document.activeElement === chatInput.current) return;
+
     clearTimeout(timerRef.current);
 
-    if (player.chat.alwaysHide) {
-      setUiVisible(false);
-      if (showRoomView || document.pointerLockElement === canvasRef.current) return;
+    showUI();
+
+    if (
+      player.chat.alwaysHide &&
+      !showRoomView &&
+      document.pointerLockElement !== canvasRef.current
+    ) {
       requestLock();
     }
 
-    setUiVisible(true);
-
-    if (document.activeElement === chatInput.current) return;
-
     timerRef.current = setTimeout(() => {
       if (document.activeElement === chatInput.current) return;
-      setUiVisible(false);
+
+      hideUI();
     }, 3000);
-  }, [player.chat.alwaysHide, showRoomView]);
+  }, [player.chat.alwaysHide, showRoomView, showUI, hideUI]);
 
   const getPlayerField = useCallback((field) => {
     return playerRef.current[field];
@@ -516,8 +534,31 @@ export default function Game({ roomRef, usingCustomAPI }) {
     };
   }, [gameStarted, handleActivity]);
 
-  const uiClass = gameStarted && !uiVisible && !showRoomView ? "auto-hide-ui hidden" : "";
-  const viewClass = gameStarted && !uiVisible && !showRoomView ? "game-view hide-cursor" : "game-view";
+  const rafRef = useRef(null);
+
+  useEffect(() => {
+    const onMouseMove = () => {
+      if (rafRef.current) return;
+
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        handleActivity();
+      });
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [handleActivity]);
+  
+  const uiClass = gameStarted && !player.chat.neverHide && !uiVisible && !showRoomView ? "auto-hide-ui hidden" : "";
+  const viewClass = gameStarted && !player.cursor.neverHide && !uiVisible && !showRoomView ? "game-view hide-cursor" : "game-view";
 
   return (
     <div tabIndex={-1} className={viewClass} style={{ "--chat-opacity": `${player.chat.opacity}`}}>

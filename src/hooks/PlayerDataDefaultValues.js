@@ -10,6 +10,10 @@ export default {
       alwaysHide: false,
       opacity: 0.8,
       height: 200,
+      neverHide: true
+    },
+    cursor: {
+      neverHide: true
     },
     sound: {
       chat: true,
