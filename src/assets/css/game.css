@@ -647,6 +647,7 @@ th {
 }
 
 .dialog>h1,
+.dialog>div>h1,
 .room-view>.container>h1 {
     font-size: 20px;
     font-weight: 600;
@@ -656,6 +657,33 @@ th {
     border-bottom: 3px;
     border-bottom-color: var(--border-accent);
     border-bottom-style: solid
+}
+
+.dialog > div > .room-search {
+    margin-bottom: 18px;
+}
+
+.dialog > div > .room-search input {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border-accent);
+    border-radius: 8px;
+    background: var(--background-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+    box-sizing: border-box;
+}
+
+.dialog > div > .room-search input::placeholder {
+    color: var(--text-secondary);
+}
+
+.dialog > div > .room-search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
 }
 
 .dialog>:not(:last-child),

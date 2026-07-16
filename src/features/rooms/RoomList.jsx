@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo, memo, useCallback } from "react";
 import PerfectScrollbar from "perfect-scrollbar";
 import { getRooms } from "./rooms.service.js";
 import { useNavigate } from "react-router-dom";
@@ -36,7 +36,9 @@ const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
 function RoomList() {
   const { player, setPlayerField } = usePlayerData();
   const [rooms, setRooms] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef(null);
+  const psRef = useRef(null);
   const [roomSelected, setRoomSelected] = useState(null);
   const [popupComponent, setPopupComponent] = useState(null);
   const [popupProps, setPopupProps] = useState({});
@@ -66,6 +68,14 @@ function RoomList() {
       setPopupComponent(() => InputDialog);
     });
   }, []);
+
+  const handleSearchChange = useCallback((e) => setSearchTerm(e.target.value), []);
+
+  const filteredRooms = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return rooms;
+    return rooms.filter((room) => room.data.name.toLowerCase().includes(term));
+  }, [rooms, searchTerm]);
 
   const handleRowClick = useCallback((roomId) => setRoomSelected(roomId), [setRoomSelected]);
 
@@ -150,9 +160,31 @@ function RoomList() {
   }, [refresh]);
 
   useEffect(() => {
+    if (roomSelected && !filteredRooms.some((r) => r.id === roomSelected)) {
+      setRoomSelected(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRooms]);
+
+  useEffect(() => {
     const ps = new PerfectScrollbar(containerRef.current);
-    return () => ps.destroy();
+    psRef.current = ps;
+    return () => {
+      psRef.current = null;
+      ps.destroy();
+    };
   }, []);
+  
+  useEffect(() => {
+    psRef.current?.update();
+  }, [filteredRooms]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+    psRef.current?.update();
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!player.geo) {
@@ -173,7 +205,17 @@ function RoomList() {
             closePopup={closePopup}
           />
           <div className="dialog">
-            <h1>Room list</h1>
+            <div>
+              <h1>Room list</h1>
+              <div className="room-search">
+                <input
+                  type="text"
+                  placeholder="Search room..."
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                />
+              </div>
+            </div>
             <p>Tip: Join rooms near you to reduce lag.</p>
             <div className="splitter">
               <div className="list">
@@ -207,15 +249,23 @@ function RoomList() {
                       <col></col>
                     </colgroup>
                     <tbody data-hook="list">
-                      {rooms.map((room) => (
-                        <RoomListItem
-                          key={room.id}
-                          room={room}
-                          isSelected={roomSelected === room.id}
-                          onClick={handleRowClick}
-                          onDoubleClick={handleRowDoubleClick}
-                        />
-                      ))}
+                      {filteredRooms.length === 0 && rooms.length > 0 ? (
+                        <tr>
+                          <td colSpan={4} data-hook="no-results">
+                            No rooms match "{searchTerm}"
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredRooms.map((room) => (
+                          <RoomListItem
+                            key={room.id}
+                            room={room}
+                            isSelected={roomSelected === room.id}
+                            onClick={handleRowClick}
+                            onDoubleClick={handleRowDoubleClick}
+                          />
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -249,7 +299,7 @@ function RoomList() {
                   onClick={handleJoinHidden}
                 >
                   <i className="icon-login"></i>
-                  <div>Join Hidden</div>
+                  <div>Link Join</div>
                 </button>
                 <button data-hook="create" onClick={showCreateRoom}>
                   <i className="icon-plus"></i>

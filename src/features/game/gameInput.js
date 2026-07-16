@@ -59,7 +59,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
     room._queuePendingKeyState = (state) => {
         room._pendingKeyState = state;
         room._hasPendingKeyState = true;
-        //room.renderer?.requestImmediateRender?.();
+        room.renderer?.requestImmediateRender?.();
     };
     room._flushPendingKeyState = () => {
         if (!room._hasPendingKeyState) return false;
@@ -81,9 +81,13 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
     const gameKeysHandler = new GameKeysHandler(keys, room, chatInput);
 
     const handleKeyDown = (e) => {
+        if (e.repeat) return;
         room._lastInputTime = performance.now();
         if (gameKeysHandler.pressKey(e.code)) return;
         switch (e.code) {
+            case 'KeyP':
+                room.pauseGame();
+                break;
             case 'Tab':
             case 'Enter':
             case 'NumpadEnter':

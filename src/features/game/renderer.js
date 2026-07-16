@@ -245,7 +245,7 @@ export default function(API, params){
     ]
   };
 
-  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false, framesInFlight = 0, rendererLifecycleToken = 0, renderBlockedByGPU = false, forceImmediateRender = false;
+  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, playerContainer = null, nameContainer = null, haloContainer = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false, framesInFlight = 0, rendererLifecycleToken = 0, renderBlockedByGPU = false, forceImmediateRender = false;
   var maxFramesInFlight = 2;
 
   function redrawJoint({ gr, dx, dy, color }){
@@ -331,6 +331,157 @@ export default function(API, params){
     return (deltaX*deltaX+deltaY*deltaY<=900) ? null : { x, y, angle: Math.atan2(deltaY, deltaX) };
   }
 
+  function _destroyDiscInfo(discInfo) {
+    discInfo.gr?.parent?.removeChild(discInfo.gr);
+    discInfo.gr?.destroy();
+    discInfo.mask?.parent?.removeChild(discInfo.mask);
+    discInfo.mask?.destroy();
+    discInfo.avatarText?.parent?.removeChild(discInfo.avatarText);
+    discInfo.avatarText?.destroy();
+    discInfo.playerNameText?.parent?.removeChild(discInfo.playerNameText);
+    discInfo.playerNameText?.destroy();
+    discInfo.playerNameMask?.parent?.removeChild(discInfo.playerNameMask);
+    discInfo.playerNameMask?.destroy();
+  }
+
+  function _removeDiscByPlayerId(playerId) {
+    if (!customDiscInfo) return;
+    const idx = customDiscInfo.findIndex(info => info && info.playerId === playerId);
+    if (idx === -1) return;
+    _destroyDiscInfo(customDiscInfo[idx]);
+    customDiscInfo.splice(idx, 1);
+  }
+
+  function _addMissingDiscInfos(){
+    if (!stage2 || !customDiscInfo || !thisRenderer.room?.state?.gameState) return;
+    const discs = thisRenderer.room.state.gameState.physicsState.discs;
+    for (let i = customDiscInfo.length; i < discs.length; i++){
+      customDiscInfo[i] = _createDiscGraphics(discs[i]);
+    }
+  }
+
+  function _addChatIndicatorForPlayer(playerId){
+    if (!stage2 || chatIndicatorInfo[playerId]) return;
+    const gr = new PIXI.Sprite(texture4);
+    gr.anchor.set(0.5);
+    gr.visible = false;
+    stage2.addChild(gr);
+    chatIndicatorInfo[playerId] = { gr, active: false };
+  }
+
+  function _removeChatIndicatorForPlayer(playerId){
+    const info = chatIndicatorInfo[playerId];
+    if (!info) return;
+    info.gr?.parent?.removeChild(info.gr);
+    info.gr?.destroy();
+    delete chatIndicatorInfo[playerId];
+  }
+
+  function _addLocationIndicatorForPlayer(playerId, color) {
+    if (!stage2 || locationIndicatorInfo[playerId]) return;
+    const gr = new PIXI.Graphics();
+    const gr1 = new PIXI.Graphics();
+    gr1.x = 2; gr1.y = 2;
+    gr1.moveTo(15, 0); gr1.lineTo(0, 7); gr1.lineTo(0, -7); gr1.closePath();
+    gr1.fill({ color: "rgba(0,0,0,0.5)" });
+    gr.addChild(gr1);
+    const gr2 = new PIXI.Graphics();
+    gr2.x = -2; gr2.y = -2;
+    gr2.moveTo(15, 0); gr2.lineTo(0, 7); gr2.lineTo(0, -7); gr2.closePath();
+    gr2.fill({ color: Utils.numberToColor(color) });
+    gr.addChild(gr2);
+    gr.visible = false; // la posición real la fija updateLocationIndicators en el próximo frame
+    stage2.addChild(gr);
+    locationIndicatorInfo[playerId] = gr;
+  }
+
+  function _removeLocationIndicatorForPlayer(playerId) {
+    const gr = locationIndicatorInfo[playerId];
+    if (!gr) return;
+    gr.parent?.removeChild(gr);
+    gr.destroy();
+    delete locationIndicatorInfo[playerId];
+  }
+
+  function _createDiscGraphics(discObj) {
+    const gr = new PIXI.Graphics();
+    if (thisRenderer.squarePlayers)
+      gr.rect(-discObj.radius, -discObj.radius, 2 * discObj.radius, 2 * discObj.radius);
+    else
+      gr.circle(0, 0, discObj.radius + 10);
+    gr.fill({ color: 0x000000, alpha: 0 });
+    gr.stroke({
+      color: 0x000000,
+      width: thisRenderer.discLineWidth - 2,
+      alignment: 0.5,
+    });
+    stage2.addChild(gr);
+
+    let gr2 = null, avatarText = null, playerNameText = null, playerNameMask = null;
+
+    if (discObj.playerId !== null && discObj.playerId !== undefined) {
+      gr2 = new PIXI.Graphics();
+      if (thisRenderer.squarePlayers)
+        gr2.rect(-discObj.radius, -discObj.radius, 2 * discObj.radius, 2 * discObj.radius);
+      else
+        gr2.circle(0, 0, discObj.radius + 11);
+      gr2.fill({ color: Utils.numberToColor(discObj.color) });
+      gr.mask = gr2;
+
+      avatarText = new PIXI.Text({
+        text: "",
+        style: {
+          fontFamily: ["Arial Black", "Arial Bold", "Gadget", "sans-serif"],
+          fontSize: 16,
+          align: "center",
+          fill: "#000000",
+          fontWeight: "900"
+        }
+      });
+      avatarText.resolution = 2;
+      avatarText.anchor.set(0.5);
+
+      const player = thisRenderer.room.getPlayer(discObj.playerId);
+      playerNameText = new PIXI.Text({
+        text: player.name,
+        style: {
+          fontFamily: ["sans-serif"],
+          fontSize: 12,
+          fill: "#ffffff",
+          fontWeight: "100",
+        }
+      });
+      playerNameText.resolution = 2;
+
+      if (2 * playerNameText.width > 160) {
+        playerNameMask = new PIXI.Graphics();
+        playerNameMask.rect(0, 0, 73, 16);
+        playerNameMask.fill(0x000000);
+        playerNameMask.alpha = 0.5;
+        playerNameText.anchor.set(0, 0.5);
+        playerNameText.pivot.set(34, -discObj.radius * 1.65);
+        playerNameMask.pivot.set(34, -discObj.radius * 1.65 + 4);
+        stage2.addChild(playerNameMask);
+        playerNameText.mask = playerNameMask;
+      } else {
+        playerNameText.anchor.set(0.5);
+        playerNameText.pivot.set(0, -discObj.radius * 1.65);
+      }
+
+      stage2.removeChild(gr);
+      playerContainer.addChild(gr);
+      nameContainer.addChild(playerNameText);
+      playerContainer.addChild(gr2);
+      playerContainer.addChild(avatarText);
+    }
+
+    return {
+      gr, avatarText, playerNameText, mask: gr2,
+      cache: null, teamCache: null, playerNameMask,
+      playerId: discObj.playerId ?? null
+    };
+  }
+
   function regenerateNecessaryObjects({FillGradient, Matrix, Container, Graphics, Text, Sprite}, {players, gameState}){
     if (!gameState)
       return;
@@ -354,9 +505,9 @@ export default function(API, params){
     stage3 = new Container();
     stage3.x = -origin.x;
     stage3.y = -origin.y;
-    const nameContainer = new Container();
-    const playerContainer = new Container();
-    const haloContainer = new Container();
+    nameContainer = new Container();
+    playerContainer = new Container();
+    haloContainer = new Container();
     function initHalo(){
       const gr = new Graphics();
       if (thisRenderer.squarePlayers)
@@ -508,75 +659,7 @@ export default function(API, params){
       customSegmentInfo[id] = {gr, cache:null};
     }
     function initDisc(discObj, id){
-      const gr = new Graphics();
-      if (thisRenderer.squarePlayers)
-        gr.rect(-discObj.radius, -discObj.radius, 2*discObj.radius, 2*discObj.radius);
-      else
-        gr.circle(0, 0, discObj.radius+10);
-      gr.fill({ color: 0x000000, alpha: 0 });
-      gr.stroke({
-        color: 0x000000,
-        width: thisRenderer.discLineWidth-2,
-        alignment: 0.5,
-      });
-      stage2.addChild(gr);
-      let gr2 = null;
-      let avatarText = null;
-      let playerNameText = null;
-      let playerNameMask = null;
-      if (discObj.playerId!==null && discObj.playerId!==undefined){
-        gr2 = new Graphics();
-        if (thisRenderer.squarePlayers)
-          gr2.rect(-discObj.radius, -discObj.radius, 2*discObj.radius, 2*discObj.radius);
-        else
-          gr2.circle(0, 0, discObj.radius+11);
-        gr2.fill({ color: Utils.numberToColor(discObj.color) });
-        gr.mask = gr2;
-        avatarText = new Text({
-          text: "",
-          style: {
-            fontFamily: ["Arial Black", "Arial Bold", "Gadget", "sans-serif"],
-            fontSize: 16,
-            align: "center",
-            fill: "#000000",
-            fontWeight: "900"
-          }
-        });
-        avatarText.resolution = 2;
-        avatarText.anchor.set(0.5);
-        const player = thisRenderer.room.getPlayer(discObj.playerId);
-        playerNameText = new Text({
-          text: player.name,
-          style: {
-            fontFamily: ["sans-serif"],
-            fontSize: 12,
-            fill: "#ffffff",
-            fontWeight: "100",
-          }
-        });
-        playerNameText.resolution = 2;
-        if (2*playerNameText.width>160){
-          playerNameMask = new Graphics();
-          playerNameMask.rect(0, 0, 73, 16);
-          playerNameMask.fill(0x000000);
-          playerNameMask.alpha = 0.5;
-          playerNameText.anchor.set(0, 0.5);
-          playerNameText.pivot.set(34, -discObj.radius*1.65);
-          playerNameMask.pivot.set(34, -discObj.radius*1.65+4);
-          stage2.addChild(playerNameMask);
-          playerNameText.mask = playerNameMask;
-        }
-        else{
-          playerNameText.anchor.set(0.5);
-          playerNameText.pivot.set(0, -discObj.radius*1.65);
-        }
-        stage2.removeChild(gr);
-        playerContainer.addChild(gr);
-        nameContainer.addChild(playerNameText);
-        playerContainer.addChild(gr2);
-        playerContainer.addChild(avatarText);
-      }
-      customDiscInfo[id] = { gr, avatarText, playerNameText, mask: gr2, cache: null, teamCache: null, playerNameMask };
+      customDiscInfo[id] = _createDiscGraphics(discObj);
     }
     function initJoint(jointObj, id){
       if (jointObj.color==-1)
@@ -1491,15 +1574,35 @@ export default function(API, params){
   };
 
   this.onPlayerJoin = function(playerObj, customData){
-    _regenerateNecessaryObjects();
+    if (!stage2) return;
+    if (playerObj.disc) {
+      _addMissingDiscInfos();
+      _addLocationIndicatorForPlayer(playerObj.id, playerObj.team.color);
+    }
+    _addChatIndicatorForPlayer(playerObj.id);
   };
 
-  this.onPlayerLeave = function(playerObj, reason, isBanned, byId, customData){
-    _regenerateNecessaryObjects();
+  this.onPlayerLeave = function (playerObj, reason, isBanned, byId, customData) {
+    _removeDiscByPlayerId(playerObj.id);
+    _removeChatIndicatorForPlayer(playerObj.id);
+    _removeLocationIndicatorForPlayer(playerObj.id);
   };
 
-  this.onPlayerTeamChange = function(id, teamId, byId, customData){
-    _regenerateNecessaryObjects();
+  this.onPlayerTeamChange = function (id, teamId, byId, customData) {
+    if (!customDiscInfo) return;
+    const player = thisRenderer.room.getPlayer(id);
+    const hadDiscInfo = customDiscInfo.some(info => info && info.playerId === id);
+    const hasDiscNow = !!player?.disc;
+
+    if (hadDiscInfo && !hasDiscNow) {
+      _removeDiscByPlayerId(id);
+      _removeLocationIndicatorForPlayer(id);
+      _removeChatIndicatorForPlayer(id);
+    } else if (!hadDiscInfo && hasDiscNow) {
+      _addMissingDiscInfos();
+      _addLocationIndicatorForPlayer(id, player.team.color);
+      _addChatIndicatorForPlayer(id);
+    }
   };
 
   this.onVariableValueChange = function(addonObject, variableName, oldValue, newValue){
@@ -1574,7 +1677,7 @@ export default function(API, params){
     origin.y += k*(pixelCoordY - (rendererObj ? rendererObj.screen.height/2 : params.canvas.height/2));
     scale *= zoomCoeff;
     thisRenderer.zoomCoeff = scale;
-    _regenerateNecessaryObjects();
+    stage2.scale.set(scale, scale);
     return scale;
   };
 
@@ -1584,7 +1687,7 @@ export default function(API, params){
     origin.y += k*(pixelCoordY - (rendererObj ? rendererObj.screen.height/2 : params.canvas.height/2));
     scale /= zoomCoeff;
     thisRenderer.zoomCoeff = scale;
-    _regenerateNecessaryObjects();
+    stage2.scale.set(scale, scale);
     return scale;
   };
 
@@ -1603,13 +1706,15 @@ export default function(API, params){
 
       scale = targetZoom;
       thisRenderer.zoomCoeff = scale;
-      _regenerateNecessaryObjects();
+      if (stage2 && stage2.scale) {
+        stage2.scale.set(targetZoom, targetZoom);
+      }
 
       return scale;
   };
 
   this.onLanguageChange = function(abbr, customData){
-    _regenerateNecessaryObjects();
+    //_regenerateNecessaryObjects();
   };
 
   this.onKeyDown = function(e){

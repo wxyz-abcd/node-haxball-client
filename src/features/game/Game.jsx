@@ -56,7 +56,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const [stadiumName, setStadiumName] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showRoomView, setShowRoomView] = useState(false);
-  const [chatRows, setChatRows] = useState([]);
+  const chatBoxRef = useRef(null);
   const [players, setPlayers] = useState([]);
   const [teamsLocked, setTeamsLocked] = useState(true);
   const [gameStarted, setGameStarted] = useState(false);
@@ -68,7 +68,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
   const chatInput = useRef(null);
   const soundInstanceRef = useRef(null);
   const soundRef = useRef(null);
-  const [uiVisible, setUiVisible] = useState(false);
+  const [uiVisible, setUiVisible] = useState(true);
   const uiVisibleRef = useRef(true);
   const [rendererObj, setRendererObj] = useState(null);
   const timerRef = useRef(null);
@@ -118,6 +118,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
 
       hideUI();
     }, 3000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.chat.alwaysHide, showRoomView, showUI, hideUI]);
 
   const getPlayerField = useCallback((field) => {
@@ -126,15 +127,15 @@ export default function Game({ roomRef, usingCustomAPI }) {
 
   const chatApi = useMemo(()=>({
     receiveChatMessage: (nick, msg) => {
-      setChatRows(prev => [...prev, { type: 0, content: nick + ": " + msg }])
+      chatBoxRef.current?.addRow({ type: 0, content: nick + ": " + msg });
       handleActivity();
     },
     receiveAnnouncement: (msg, color, style) => {
-      setChatRows(prev => [...prev, { type: 1, content: msg, color, font: style }])
+      chatBoxRef.current?.addRow({ type: 1, content: msg, color, font: style });
       handleActivity();
     },
     receiveNotice: (msg) => {
-      setChatRows(prev => [...prev, { type: 0, content: msg, className: "notice" }]);
+      chatBoxRef.current?.addRow({ type: 0, content: msg, className: "notice" });
       handleActivity();
     },
     focusOnChat: () => {
@@ -435,8 +436,16 @@ export default function Game({ roomRef, usingCustomAPI }) {
     room.onAfterTeamGoal = () => {
       if (player.sound.main) s.playSound(s.goal);
     };
-    room.onAfterPlayerAdminChange = (id, admin) => {
-      if (id === room.currentPlayerId) setIsAdmin(admin);
+    room.onAfterPlayerAdminChange = (id, admin, byId) => {
+      setPlayers([...room.players]);
+      const playerChanged = room.getPlayer(id);
+      const byPlayer = room.getPlayer(byId);
+      if (id == room.currentPlayerId)
+        setIsAdmin(admin);
+      if (admin)
+        chatApi.receiveNotice(`${playerChanged.name} was given admin rights by ${byPlayer.name}`);
+      else 
+        chatApi.receiveNotice(`${playerChanged.name} admin rights were taken away by ${byPlayer.name}`);
     };
     room.onAfterPlayerTeamChange = (id, teamId, byId) => {
       setPlayers([...room.players]);
@@ -459,10 +468,19 @@ export default function Game({ roomRef, usingCustomAPI }) {
       if (player.sound.chat) s.playSound(s.join);
       chatApi.receiveNotice(`${playerObj.name} has joined`);
     };
-    room.onAfterPlayerLeave = (playerObj) => {
+    room.onAfterPlayerLeave = (playerObj, reason, isBanned, byId) => {
       setPlayers([...room.players]);
       if (player.sound.main) s.playSound(s.leave);
-      chatApi.receiveNotice(`${playerObj.name} has left`);
+      if (typeof reason == "string") {
+        const byPlayer = room.getPlayer(byId);
+        if (isBanned) {
+          chatApi.receiveNotice(`${playerObj.name} was banned by ${byPlayer.name} ${reason.length > 0 ? '(' + reason + ')' : ''}`);
+        } else {
+          chatApi.receiveNotice(`${playerObj.name} was kicked by ${byPlayer.name} ${reason.length > 0 ? '(' + reason + ')' : ''}`);
+        }
+      } else {
+        chatApi.receiveNotice(`${playerObj.name} has left`);
+      }
     };
     room.onAfterTeamsLockChange = (value) => setTeamsLocked(value);
     room.onAfterGameStop = (byId) => {
@@ -514,25 +532,6 @@ export default function Game({ roomRef, usingCustomAPI }) {
     setTimeLimit(value);
     roomRef.current?.setTimeLimit(value);
   }, [roomRef]);
-
-  useEffect(() => {
-    if (!gameStarted) {
-      setUiVisible(true);
-      return;
-    }
-
-    handleActivity();
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('focus', handleActivity, true);
-    window.addEventListener('blur', handleActivity, true);
-
-    return () => {
-      window.removeEventListener('mousemove', handleActivity);
-      window.removeEventListener('focus', handleActivity, true);
-      window.removeEventListener('blur', handleActivity, true);
-      clearTimeout(timerRef.current);
-    };
-  }, [gameStarted, handleActivity]);
 
   const rafRef = useRef(null);
 
@@ -597,11 +596,11 @@ export default function Game({ roomRef, usingCustomAPI }) {
       <div tabIndex={-1} className={`bottom-section ${uiClass}`} style={{zIndex:2, width:'50vw'}}>
 
         <ChatBox
-          chatRows={chatRows}
+          ref={chatBoxRef}
           onChatSubmit={onChatSubmit}
           chatInputRef={chatInput}
           height={player.chat.height}
-          player={player}
+          chat={player.chat}
           setPlayerField={setPlayerField}
           roomRef={roomRef}
         />
@@ -610,7 +609,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
       </div>
 
       <div className={`buttons`} style={{zIndex:2}}>
-        <SoundButton player={player} initialVolume={player.sound.gain} soundInstance={soundInstanceRef.current} setPlayerField={setPlayerField}></SoundButton>
+        <SoundButton sound={player.sound} soundInstance={soundInstanceRef.current} setPlayerField={setPlayerField}></SoundButton>
         <button data-hook="menu" disabled={!gameStarted} onClick={handleMenu}><i className="icon-menu" />Menu<span className="tooltip">Toggle room menu [Escape]</span></button>
         <button data-hook="settings" onClick={handleSettings}><i className="icon-cog" /></button>
       </div>

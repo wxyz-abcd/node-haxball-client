@@ -2,8 +2,15 @@ import KickBanPopup from "./KickBanPopup"
 
 function AdminPopup({ player, clickedPlayer, showPopup, room }) {
     const handleKickClick = () => {
-        showPopup(<KickBanPopup clickedPlayer={clickedPlayer} showPopup={showPopup} room={room} />)
-    }
+    showPopup({
+        component: KickBanPopup,
+        props: {
+            clickedPlayer,
+            room,
+            showPopup
+        }
+    });
+};
 
     const handleAdmin = () => {
         room.setPlayerAdmin(clickedPlayer.id, !clickedPlayer.isAdmin)

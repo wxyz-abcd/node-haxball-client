@@ -1,17 +1,19 @@
 import { useState, useRef } from "react";
 
-export default function SoundButton({ soundInstance, setPlayerField, player, initialVolume }) {
-  const [volume, setVolume] = useState(initialVolume);
-  const [volumeAtMute, setVolumeAtMute] = useState(initialVolume);
+export default function SoundButton({ soundInstance, setPlayerField, sound }) {
+  const [volume, setVolume] = useState(sound.gain);
+  const [volumeAtMute, setVolumeAtMute] = useState(sound.gain);
   const sliderRef = useRef(null);
   const containerRef = useRef(null);
 
-  const updateVolume = (v) => {
+  const applyVolume = (v) => {
+    if (soundInstance) soundInstance.gain.gain.value = v;
     setVolume(v);
-    if (soundInstance) {
-      soundInstance.gain.gain.value = v;
-      setPlayerField('sound', {...player.sound, gain: v });
-    }
+    return v;
+  };
+
+  const commitVolume = (v) => {
+    setPlayerField('sound', { ...sound, gain: v });
   };
 
   const handleChange = (e) => {
@@ -20,16 +22,19 @@ export default function SoundButton({ soundInstance, setPlayerField, player, ini
     const offsetY = e.clientY - rect.top;
     const percent = 1 - offsetY / rect.height;
     const clamped = Math.max(0, Math.min(1, percent));
-    updateVolume(clamped);
+    return applyVolume(clamped);
   };
 
   const handleMouseDown = (e) => {
     e.preventDefault()
     containerRef.current.classList.add("dragging");
-    handleChange(e);
+    let localVol = handleChange(e);
 
-    const handleMove = (ev) => handleChange(ev);
+    const handleMove = (ev) => {
+      localVol = handleChange(ev);
+    };
     const handleUp = () => {
+      commitVolume(localVol);
       containerRef.current.classList.remove("dragging");
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("mouseup", handleUp);
@@ -40,13 +45,15 @@ export default function SoundButton({ soundInstance, setPlayerField, player, ini
   };
 
   const handleButtonClick = () => {
-    if (volume == 0) {
-      updateVolume(volumeAtMute || 1);
+    if (volume === 0) {
+      const v = applyVolume(volumeAtMute || 1);
+      commitVolume(v);
     } else {
       setVolumeAtMute(volume);
-      updateVolume(0);
-    };
-  }
+      const v = applyVolume(0);
+      commitVolume(v);
+    }
+  };
 
   let iconClass = "icon-volume-up";
   if (volume === 0) iconClass = "icon-volume-off";

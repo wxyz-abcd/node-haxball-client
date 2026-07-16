@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import PlayerListView from './PlayerListView.jsx';
 
 export default React.memo(function RoomHeader({
@@ -19,6 +19,11 @@ export default React.memo(function RoomHeader({
   players,
   setPopup
 }) {
+  const playerRef = useRef(null);
+
+  useEffect(() => {
+      playerRef.current = players;
+    }, [players]);
 
   const safeRoom = roomRef?.current;
 

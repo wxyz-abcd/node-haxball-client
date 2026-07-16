@@ -3,7 +3,14 @@ import { downloadFile } from "../../../../utils/downloadFile.js";
 
 function StadiumPickPopup({ room, showPopup }) {
     const [stadiumSelected, setStadiumSelected] = useState(null);
+    const [indexSelected, setIndexSelected] = useState(null);
     const [stadiumList, setStadiumList] = useState([]);
+
+    const handleClick = (stadium, index) => {
+        setStadiumSelected(stadium);
+        setIndexSelected(index);
+    }
+
     const handlePick = () => {
         let stadiumObj;
         if (typeof stadiumSelected == "string") {
@@ -16,7 +23,41 @@ function StadiumPickPopup({ room, showPopup }) {
     }
 
     const handleDelete = () => {
-        //has to delete the stored stadium
+        if (!stadiumSelected?.isCustom) return;
+
+        const request = window.indexedDB.open("stadiums", 1);
+        request.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction("stadiums", "readwrite");
+            const objectStore = transaction.objectStore("stadiums");
+            const getAllKeysRequest = objectStore.getAllKeys();
+
+            getAllKeysRequest.onsuccess = function (event) {
+                const keys = event.target.result;
+                const customIndex = indexSelected - 10;
+                const keyToDelete = keys[customIndex];
+                console.log(customIndex)
+                if (keyToDelete === undefined) return;
+
+                const deleteRequest = objectStore.delete(keyToDelete);
+                deleteRequest.onsuccess = function () {
+                    setStadiumSelected(null);
+                    setIndexSelected(null);
+                    getStadiumList();
+                };
+                deleteRequest.onerror = function () {
+                    console.error("Failed to delete stadium from indexedDB");
+                };
+            };
+
+            getAllKeysRequest.onerror = function () {
+                console.error("Failed to read stadium keys from indexedDB");
+            };
+        };
+
+        request.onerror = function () {
+            console.error("Failed to open indexedDB");
+        };
     }
 
     const fileSumbit = (e) => {
@@ -73,7 +114,7 @@ return (
         <div className="splitter">
             <div className="list ps">
                 {stadiumList.map((stadium, index) =>
-                    <div onClick={() => setStadiumSelected(stadium)} className={index > 9 ? "elem custom" : "elem"}>{stadium.name}</div>
+                    <div onClick={() => handleClick(stadium, index)} className={`${index > 9 ? "elem custom" : "elem"} ${indexSelected == index ? "selected" : ""}`}>{stadium.name}</div>
                 )}
             </div>
             <div className="buttons">

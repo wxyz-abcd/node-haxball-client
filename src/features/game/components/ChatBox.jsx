@@ -1,24 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useImperativeHandle } from 'react'
 
 const MIN_CHAT_HEIGHT = 33;
 const MAX_CHAT_HEIGHT = 400;
 
 export default React.memo(function ChatBox({
-  chatRows,
+  ref,
   onChatSubmit,
   chatInputRef,
   height,
   setPlayerField,
   roomRef,
-  player
+  chat
 }) {
   const [inputValue, setInputValue] = useState("");
   const [chatHeight, setChatHeight] = useState(height);
   const [isResizing, setIsResizing] = useState(false);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
-  const playerRef = useRef(player);
+  const chatRef = useRef(chat);
   const setPlayerFieldRef = useRef(setPlayerField);
+  const [chatRows, setChatRows] = useState([]);
+  useImperativeHandle(ref, () => ({
+    addRow: (row) => setChatRows(prev => [...prev, row]),
+    clear: () => setChatRows([]),
+  }), []);
 
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -28,8 +33,8 @@ export default React.memo(function ChatBox({
   const mentionItemRefs = useRef([]);
 
   useEffect(() => {
-    playerRef.current = player;
-  }, [player]);
+    chatRef.current = chat;
+  }, [chat]);
 
   useEffect(() => {
     setPlayerFieldRef.current = setPlayerField;
@@ -56,7 +61,7 @@ export default React.memo(function ChatBox({
         MAX_CHAT_HEIGHT
       );
       setChatHeight(nextHeight);
-      setPlayerFieldRef.current("chat", { ...playerRef.current.chat, height: nextHeight });
+      setPlayerFieldRef.current("chat", { ...chatRef.current, height: nextHeight });
       setIsResizing(false);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
