@@ -86,6 +86,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
         if (gameKeysHandler.pressKey(e.code)) return;
         switch (e.code) {
             case 'KeyP':
+                if (document.activeElement == chatInput) return;
                 room.pauseGame();
                 break;
             case 'Tab':
