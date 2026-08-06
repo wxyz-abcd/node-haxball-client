@@ -25,9 +25,9 @@ export default function SliderOption({title, min, max, step, value, defaultValue
                 value={sliderValue}
                 onChange={handleChange}
             />
-            {value !== defaultValue && (
-                <a onClick={handleRestart} style={{ marginLeft: '10px' }}>
-                Restart value
+            {(
+                <a onClick={handleRestart} style={{ marginLeft: 'auto', cursor: (value !== defaultValue ? 'pointer' : "not-allowed"), fontSize: '12px', color: '#888' }}>
+                Reset
                 </a>
             )}
         </div>

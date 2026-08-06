@@ -471,12 +471,12 @@ export default function Game({ roomRef, usingCustomAPI }) {
     room.onAfterPlayerLeave = (playerObj, reason, isBanned, byId) => {
       setPlayers([...room.players]);
       if (player.sound.main) s.playSound(s.leave);
-      if (typeof reason == "string") {
+      if (reason?.length >= 0) {
         const byPlayer = room.getPlayer(byId);
         if (isBanned) {
-          chatApi.receiveNotice(`${playerObj.name} was banned by ${byPlayer.name} ${reason.length > 0 ? '(' + reason + ')' : ''}`);
+          chatApi.receiveNotice(`${playerObj.name} was banned ${byPlayer ? `by ${byPlayer.name}` : ''} ${reason.length > 0 ? '(' + reason + ')' : ''}`);
         } else {
-          chatApi.receiveNotice(`${playerObj.name} was kicked by ${byPlayer.name} ${reason.length > 0 ? '(' + reason + ')' : ''}`);
+          chatApi.receiveNotice(`${playerObj.name} was kicked ${byPlayer ? `by ${byPlayer.name}` : ''} ${reason.length > 0 ? '(' + reason + ')' : ''}`);
         }
       } else {
         chatApi.receiveNotice(`${playerObj.name} has left`);

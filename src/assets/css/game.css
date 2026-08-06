@@ -3166,7 +3166,9 @@ th {
 
 .settings-view .tabcontents {
     overflow-y: auto;
-    flex: 1
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #888888 #f1f1f100;
 }
 
 .settings-view [data-hook=presskey] {

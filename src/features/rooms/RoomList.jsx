@@ -269,17 +269,6 @@ function RoomList() {
                     </tbody>
                   </table>
                 </div>
-                <div className="filters">
-                  <span className="bool" data-hook="fil-pass">
-                    Show locked <i className="icon-ok"></i>
-                  </span>
-                  <span className="bool" data-hook="fil-full">
-                    Show full <i className="icon-ok"></i>
-                  </span>
-                  <span className="bool" data-hook="fill-empty">
-                    Show empty <i className="icon-ok"></i>
-                  </span>
-                </div>
               </div>
               <div className="buttons">
                 <button data-hook="refresh" onClick={refresh}>

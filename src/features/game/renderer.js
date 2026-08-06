@@ -271,29 +271,40 @@ export default function(API, params){
   function redrawPlayerDisc(discInfo, teamColors, disc, player) {
     const gr = discInfo.gr;
     const mask = discInfo.mask;
+    const size = disc.radius * 2;
+    const half = disc.radius;
+    const stepWidth = size / teamColors.inner.length;
+    let x = -half;
     gr.clear();
     mask.clear();
+    if (thisRenderer.squarePlayers){
+      //gr.rect(-disc.radius,-disc.radius, 2*disc.radius, 2*disc.radius);
+      mask.rect(-disc.radius,-disc.radius, 2*disc.radius, 2*disc.radius);
+    }
+    else{
+      //gr.circle(0, 0, disc.radius+1);
+      mask.circle(0, 0, disc.radius+1);
+    }
     gr.rotation = (3.141592653589793*teamColors.angle)/128;
-    var stepWidth = 32/teamColors.inner.length, x=-16;
+    //var stepWidth = 32/teamColors.inner.length, x=-16;
     for (var i=0; i<teamColors.inner.length; i++){
       gr.setFillStyle(Utils.numberToColor(teamColors.inner[i]));
-      gr.rect(x, -16, stepWidth+4, 32);
+      //gr.rect(x, -16, stepWidth+4, 32);
+      gr.rect(x, -half, stepWidth+(Math.max(1, disc.radius * 0.125)), size);
       gr.fill();
       x+=stepWidth;
     };
     if (thisRenderer.squarePlayers){
       gr.rect(-disc.radius,-disc.radius, 2*disc.radius, 2*disc.radius);
-      mask.rect(-disc.radius,-disc.radius, 2*disc.radius, 2*disc.radius);
     }
     else{
       gr.circle(0, 0, disc.radius+1);
-      mask.circle(0, 0, disc.radius+1);
     }
-    mask.fill({ color: disc.color });
     gr.stroke({
       width: thisRenderer.discLineWidth,
       color: player.isKicking ? 0xffffff : 0x000000
     });
+    mask.fill({ color: disc.color });
   };
 
   function redrawHalo(){
@@ -417,7 +428,7 @@ export default function(API, params){
     });
     stage2.addChild(gr);
 
-    let gr2 = null, avatarText = null, playerNameText = null, playerNameMask = null;
+    let gr2 = null, avatarText = null, playerNameText = null, playerNameMask = null, avatarMask;
 
     if (discObj.playerId !== null && discObj.playerId !== undefined) {
       gr2 = new PIXI.Graphics();
@@ -440,6 +451,13 @@ export default function(API, params){
       });
       avatarText.resolution = 2;
       avatarText.anchor.set(0.5);
+      avatarMask = new PIXI.Graphics();
+      if (thisRenderer.squarePlayers)
+        avatarMask.rect(-discObj.radius, -discObj.radius, 2*discObj.radius, 2*discObj.radius);
+      else
+        avatarMask.circle(0, 0, discObj.radius-1);
+      avatarMask.fill({ color: 0xffffff });
+      avatarText.mask = avatarMask;
 
       const player = thisRenderer.room.getPlayer(discObj.playerId);
       playerNameText = new PIXI.Text({
@@ -473,10 +491,12 @@ export default function(API, params){
       nameContainer.addChild(playerNameText);
       playerContainer.addChild(gr2);
       playerContainer.addChild(avatarText);
+      playerContainer.addChild(avatarMask);
     }
-
+    // cache prop is an obj with general disc data, such as radius, etc.
+    // teamCache prop is an obj with teams cache data, such as color, etc.
     return {
-      gr, avatarText, playerNameText, mask: gr2,
+      gr, avatarText, avatarMask, playerNameText, mask: gr2,
       cache: null, teamCache: null, playerNameMask,
       playerId: discObj.playerId ?? null
     };
@@ -1067,13 +1087,16 @@ export default function(API, params){
         const player = roomState.getPlayer(disc.playerId);
         discInfo.mask.x = pos.x;
         discInfo.mask.y = pos.y;
+        discInfo.avatarMask.x = pos.x;
+        discInfo.avatarMask.y = pos.y;
         var teamColors = thisRenderer.showTeamColors ? roomState.teamColors[player.team.id] : defaultTeamColors[player.team.id];
         
         // Optimize Avatar Text
         const avatarStr = thisRenderer.showAvatars ? (player.avatar || player.avatarNumber) : player.avatarNumber;
-        if (!discInfo.textCache || discInfo.textCache.avatar !== avatarStr || discInfo.textCache.avatarColor !== teamColors.text) {
+        if (!discInfo.textCache || discInfo.textCache.avatar !== avatarStr || discInfo.textCache.avatarColor !== teamColors.text || discInfo.cache.radius !== disc.radius) {
           discInfo.avatarText.text = avatarStr;
           discInfo.avatarText.style.fill = teamColors.text;
+          discInfo.avatarText.style.fontSize = disc.radius+1;
           discInfo.textCache = discInfo.textCache || {};
           discInfo.textCache.avatar = avatarStr;
           discInfo.textCache.avatarColor = teamColors.text;
@@ -1110,7 +1133,7 @@ export default function(API, params){
         }
         else
           chatIndicator.gr.visible = false;
-        if (!discInfo.teamCache || discInfo.teamCache.teamId !== player.team.id || discInfo.teamCache.isKicking !== player.isKicking || discInfo.teamCache.colors !== teamColors.inner){
+        if (!discInfo.teamCache || discInfo.teamCache.teamId !== player.team.id || discInfo.teamCache.isKicking !== player.isKicking || discInfo.teamCache.colors !== teamColors.inner || discInfo.cache.radius !== disc.radius){
           redrawPlayerDisc(discInfo, teamColors, disc, player);
           discInfo.teamCache = {
             teamId: player.team.id,
@@ -1121,8 +1144,9 @@ export default function(API, params){
       }
       else if (!discInfo.cache || discInfo.cache.color !== disc.color || discInfo.cache.radius !== disc.radius){
         redrawDisc({gr, disc});
-        discInfo.cache = { color: disc.color, radius: disc.radius };
       }
+      discInfo.cache = { color: disc.color, radius: disc.radius };
+
     });
     joints.forEach((joint, id)=>{
       const jointInfo = customJointInfo[id];

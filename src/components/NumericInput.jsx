@@ -63,8 +63,8 @@ export default function NumericInput({title, min, max, value, defaultValue, onCh
                 onChange={handleChange}
                 onBlur={handleBlur}
             />
-            {value !== defaultValue && (
-                <a onClick={handleRestart} style={{ marginLeft: '10px', cursor: 'pointer', fontSize: '12px', color: '#888' }}>
+            {(
+                <a onClick={handleRestart} style={{ marginLeft: '10px', cursor: (value !== defaultValue ? 'pointer' : "not-allowed"), fontSize: '12px', color: '#888' }}>
                 Reset
                 </a>
             )}

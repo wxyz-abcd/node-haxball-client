@@ -35,7 +35,8 @@ export default {
       targetFPS: 80,
       displayMode: 'windowed',
       resolution: 'native',
-      zoomCoeff: 1.0
+      zoomCoeff: 1.0,
+      immediateRender: false
     },
     keys: {
       up: ["KeyW", "ArrowUp"],

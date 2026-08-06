@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Toggle from "../Toggle";
 import SliderOption from "../SliderOption";
 import NumericInput from "../NumericInput";
@@ -9,21 +9,30 @@ import { getSupportedResolutions } from "../../utils/screenResolution";
 
 export default function VideoContent({ player, setPlayerField, roomRef }) {
   const [playerCopy, setPlayerCopy] = useState(player);
-  const [commonResolutions, setCommonResolutions] = useState([
-    { label: "Native", value: "native" },
-  ]);
+  const [commonResolutions, setCommonResolutions] = useState([]);
   const [resNotification, setResNotification] = useState(null);
+  const notificationIntervalRef = useRef(null);
 
-  // Listen for resolution change results from useWindowSettings
   useEffect(() => {
     const handler = (e) => {
       const { success, message } = e.detail;
       setResNotification({ success, message });
-      // Auto-clear after 4 seconds
-      setTimeout(() => setResNotification(null), 4000);
+      if (notificationIntervalRef.current !== null) {
+        clearTimeout(notificationIntervalRef.current);
+      }
+      notificationIntervalRef.current = setTimeout(() => {
+        setResNotification(null);
+        notificationIntervalRef.current = null;
+      }, 4000);
     };
     window.addEventListener('resolution-result', handler);
-    return () => window.removeEventListener('resolution-result', handler);
+    return () => {
+      window.removeEventListener('resolution-result', handler);
+      if (notificationIntervalRef.current) {
+        clearTimeout(notificationIntervalRef.current);
+        notificationIntervalRef.current = null;
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -74,7 +83,7 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
           fs.writeFileSync(resPath, JSON.stringify([], null, 2), "utf8");
         }
 
-        const merged = [{ label: "Native", value: "native" }, ...nativeDetected];
+        const merged = [...nativeDetected];
         const mergedVals = new Set(merged.map(x=>x.value));
         fileResolutions.forEach(r => {
             if (!mergedVals.has(r.value) && r.value !== "native") merged.push(r);
@@ -140,16 +149,19 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
           marginBottom: 8,
           borderRadius: 4,
           fontSize: 13,
-          backgroundColor: resNotification.success ? 'rgba(58, 153, 51, 0.3)' : 'rgba(193, 53, 53, 0.3)',
-          border: `1px solid ${resNotification.success ? '#3a9933' : '#c13535'}`,
-          color: resNotification.success ? '#8ed2ab' : '#ff8686',
+          backgroundColor: resNotification?.success ? 'rgba(58, 153, 51, 0.7)' : 'rgba(193, 53, 53, 0.7)',
+          border: `1px solid ${resNotification?.success ? '#3a9933' : '#c13535'}`,
+          color: resNotification?.success ? '#8ed2ab' : '#ff8686',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          position: "fixed",
+          top: 0,
+          left: 0
         }}>
-          <span>{resNotification.message}</span>
+          <span>{resNotification?.message||"test"}</span>
           <span
-            onClick={() => setResNotification(null)}
+            onClick={() => { setResNotification(null); if (notificationIntervalRef.current !== null) {clearTimeout(notificationIntervalRef.current); notificationIntervalRef.current = null;}}}
             style={{ cursor: 'pointer', marginLeft: 10, opacity: 0.7, fontSize: 16 }}
           >✕</span>
         </div>
@@ -158,15 +170,50 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         title={"Display Mode"}
         value={playerCopy.renderer.displayMode || "windowed"}
         options={displayModeOptions}
-        defaultValue={playerDefaultValues.renderer.displayMode}
+        defaultValue={playerCopy.renderer.displayMode}
         onChange={(value) => rendererChanged("displayMode", value)}
       />
       <SelectOption
         title={"Resolution"}
         value={currentResolutionValue}
         options={commonResolutions}
-        defaultValue={playerDefaultValues.renderer.resolution}
+        defaultValue={playerCopy.renderer.resolution}
         onChange={(value) => rendererChanged("resolution", value)}
+      />
+      <NumericInput
+        title={"FPS Limit (0 = unlimited)"}
+        min={0}
+        max={1000}
+        value={playerCopy.renderer.targetFPS ?? playerDefaultValues.renderer.targetFPS}
+        defaultValue={playerDefaultValues.renderer.targetFPS}
+        onChange={(value) => rendererChanged("targetFPS", value)}
+      />
+      <NumericInput
+        title={"Disc line width"}
+        min={0}
+        max={100}
+        step={1}
+        value={playerCopy.renderer.discLineWidth}
+        defaultValue={playerDefaultValues.renderer.discLineWidth}
+        onChange={(value) => rendererChanged("discLineWidth", value)}
+      />
+      <NumericInput
+        title={"General line width"}
+        min={0}
+        max={100}
+        step={1}
+        value={playerCopy.renderer.generalLineWidth}
+        defaultValue={playerDefaultValues.renderer.generalLineWidth}
+        onChange={(value) => rendererChanged("generalLineWidth", value)}
+      />
+      <SliderOption
+        title={"Resolution scale"}
+        min={0.1}
+        max={1}
+        step={0.1}
+        value={playerCopy.renderer.resolutionScale}
+        defaultValue={playerDefaultValues.renderer.resolutionScale}
+        onChange={(value) => rendererChanged("resolutionScale", value)}
       />
       <Toggle
         title={"Use WebGPU"}
@@ -222,22 +269,12 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         defaultValue={playerDefaultValues.cursor.neverHide}
         onChange={(value) => cursorChanged("neverHide", value)}
       />
-      <NumericInput
-        title={"FPS Limit (0 = unlimited)"}
-        min={0}
-        max={1000}
-        value={playerCopy.renderer.targetFPS ?? playerDefaultValues.renderer.targetFPS}
-        defaultValue={playerDefaultValues.renderer.targetFPS}
-        onChange={(value) => rendererChanged("targetFPS", value)}
-      />
-      <SliderOption
-        title={"Resolution scale"}
-        min={0.1}
-        max={1}
-        step={0.1}
-        value={playerCopy.renderer.resolutionScale}
-        defaultValue={playerDefaultValues.renderer.resolutionScale}
-        onChange={(value) => rendererChanged("resolutionScale", value)}
+      <Toggle
+        title={"Immediate render"}
+        help={"This setting reduces input lag when your FPS are capped (FPS Limit > 0), by rendering immediately on input instead of waiting for the next scheduled frame. Has no effect if you play uncapped. Not recommended above ~100 FPS, since forcing extra renders can break frame pacing and cause stutter."}
+        value={playerCopy.renderer.immediateRender ?? playerDefaultValues.renderer.immediateRender}
+        defaultValue={playerDefaultValues.renderer.immediateRender}
+        onChange={(value) => rendererChanged("immediateRender", value)}
       />
       <SliderOption
         title={"Chat opacity"}
@@ -256,24 +293,6 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         value={playerCopy.chat.height}
         defaultValue={playerDefaultValues.chat.height}
         onChange={(value) => chatChanged("height", value)}
-      />
-      <SliderOption
-        title={"Disc line width"}
-        min={0}
-        max={100}
-        step={1}
-        value={playerCopy.renderer.discLineWidth}
-        defaultValue={playerDefaultValues.renderer.discLineWidth}
-        onChange={(value) => rendererChanged("discLineWidth", value)}
-      />
-      <SliderOption
-        title={"General line width"}
-        min={0}
-        max={100}
-        step={1}
-        value={playerCopy.renderer.generalLineWidth}
-        defaultValue={playerDefaultValues.renderer.generalLineWidth}
-        onChange={(value) => rendererChanged("generalLineWidth", value)}
       />
     </div>
   );
