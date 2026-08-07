@@ -228,6 +228,17 @@ If you add new CSS colors to `game.css`:
 | [PIXI.js](https://pixijs.com/) | Game rendering (via node-haxball) |
 | [perfect-scrollbar](https://github.com/mdbootstrap/perfect-scrollbar) | Custom scrollbars |
 
+## 🤗 Contributors
+* Lots of testing, bug reports, room search, and more by fran9
+* Lots of testing by magga
+* Lots of testing, mouse input idea and much more by captain tekla
+* Lots of testing in low-end pc by envvenena
+* Lots of testing and bug reports by francisco
+* tests and ideas by tutu
+* testing by enso
+* Lots of testing, advertisement, input improvement and bunch of ideas by yves
+* Haxball recaptcha integration by [abc](https://github.com/wxyz-abcd)
+
 ## License
 
 [MIT](LICENSE)
