@@ -66,10 +66,10 @@ export default function useRoomJoin() {
         token,
       }, {
         storage: {
-          player_name: player.name,
-          avatar: player.avatar,
+          player_name: player?.name?.slice(0, 25) || "",
+          avatar: player?.avatar?.slice(0, 2) || null,
           player_auth_key: authKey,
-          geo: player.geo
+          geo: player?.geo || { lon: 0, lat: 0 }
         },
         renderer: null,
         onOpen: (room) => {
