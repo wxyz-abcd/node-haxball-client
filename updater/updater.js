@@ -10,9 +10,35 @@ import { deleteSync } from 'del';
 import semver from 'semver';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
+import https from "https";
 
 let platform = process.platform;
 platform = /^win/.test(platform) ? 'win' : /^darwin/.test(platform) ? 'mac' : 'linux' + (process.arch == 'ia32' ? '32' : '64');
+
+function fetchManifest(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { "User-Agent": "node-haxball-client-updater" } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        return resolve(fetchManifest(res.headers.location));
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP error: ${res.statusCode}`));
+      }
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => (body += chunk));
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(new Error(`Invalid manifest JSON: ${e.message}`));
+        }
+      });
+    }).on("error", reject);
+  });
+}
 
 /**
  * @typedef {object} Platform
@@ -74,8 +100,16 @@ class Updater {
   */
   checkNewVersion(cb) {
     const currentVersion = this.#manifest.version;
-
-    fetch(this.#manifest.manifestUrl)
+    
+    fetchManifest(this.#manifest.manifestUrl)
+    .then((data) => {
+      const latestVersion = data.version;
+      cb(null, semver.gt(latestVersion, currentVersion), data);
+    })
+    .catch((error) => {
+      cb(error, false, null);
+    });
+    /*fetch(this.#manifest.manifestUrl)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP error: ${response.status}`);
@@ -89,7 +123,7 @@ class Updater {
       })
       .catch((error) => {
         cb(error, false, null);
-      });
+      });*/
   }
 
   /**
