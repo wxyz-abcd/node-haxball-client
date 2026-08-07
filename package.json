@@ -2,13 +2,22 @@
   "name": "node-haxball-client",
   "main": "main.js",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
+  "manifestUrl": "https://github.com/wxyz-abcd/node-haxball-client/releases/download/latest/manifest.json",
+  "packages": {
+    "win": {
+      "url": "https://github.com/wxyz-abcd/node-haxball-client/releases/download/latest/node-haxball-client-win.zip"
+    },
+    "linux64": {
+      "url": "https://github.com/wxyz-abcd/node-haxball-client/releases/download/latest/node-haxball-client-linux.zip"
+    }
+  },
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && nw . --user-data-dir=.nw-local-data development\"",
     "preview": "cross-env vite build && cross-env nw ./ production",
-    "dist:win": "vite build && nwbuild --platform=win --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/win --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
-    "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./main.js ./package.json\"",
+    "dist:win": "vite build && nwbuild --platform=win --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/win --managedManifest=true \"./dist/**/* ./updater/* ./main.js ./package.json\"",
+    "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./updater/* ./main.js ./package.json\"",
     "dist:all": "npm run dist:win && npm run dist:linux",
     "zip:win": "npm run dist:win && powershell -Command \"Compress-Archive -Path '../node-haxball-client-out/win/*' -DestinationPath '../node-haxball-client-out/node-haxball-client-win.zip' -Force\"",
     "zip:linux": "npm run dist:linux && cd ../node-haxball-client-out && zip -r node-haxball-client-linux.zip linux",
@@ -22,11 +31,15 @@
   "chromium-args": "--allow-file-access-from-files --disable-web-security --disable-frame-rate-limit --disable-gpu-vsync --force-gpu-rasterization --ignore-gpu-blocklist --enable-zero-copy --force_high_performance_gpu",
   "node-remote": "<all_urls>",
   "dependencies": {
+    "adm-zip": "^0.6.0",
+    "axios": "^1.7.2",
+    "del": "^7.1.0",
     "node-haxball": "^2.2.0",
     "perfect-scrollbar": "^1.5.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.8.1",
+    "semver": "^7.6.2",
     "win32-api": "^26.1.2"
   },
   "devDependencies": {

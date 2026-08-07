@@ -159,21 +159,6 @@ node-haxball-client/
     └── *.json                 # Saved custom themes
 ```
 
-## Configuration Files
-
-### `resolutions.json`
-
-Add custom display resolutions that appear in **Settings → Video → Resolution**:
-
-```json
-[
-  { "label": "720p", "value": "1280x720" },
-  { "label": "Ultrawide", "value": "3440x1440" }
-]
-```
-
-The system also auto-detects your monitor's supported resolutions on Windows.
-
 ### Custom Themes
 
 Theme files are stored as JSON in the `themes/` directory next to the executable (or project root in dev mode). They can be created via **Settings → Theme → Create New**, or manually:
@@ -241,7 +226,6 @@ If you add new CSS colors to `game.css`:
 | [React Router](https://reactrouter.com/) | Client-side routing |
 | [node-haxball](https://github.com/nickreserved/node-haxball) | HaxBall backend API |
 | [PIXI.js](https://pixijs.com/) | Game rendering (via node-haxball) |
-| [@koush/wrtc](https://github.com/nickreserved/node-webrtc) | WebRTC for peer connections |
 | [perfect-scrollbar](https://github.com/mdbootstrap/perfect-scrollbar) | Custom scrollbars |
 
 ## License

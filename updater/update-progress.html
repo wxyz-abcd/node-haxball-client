@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --border: #e3e6eb;
+    --text: #1a1d24;
+    --text-muted: #767e8c;
+    --accent: #12b76a;
+    --accent-soft: rgba(18, 183, 106, 0.12);
+    --error: #e0293e;
+    --error-soft: rgba(224, 41, 62, 0.1);
+    --track: #edf0f4;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Inter", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 24px;
+    height: 100%;
+  }
+
+  .ring-wrap {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring-wrap svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+
+  .ring-bg { fill: none; stroke: var(--track); stroke-width: 4; }
+  .ring-fg {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.25s ease, stroke 0.2s ease;
+  }
+
+  .ring-fg.indeterminate {
+    stroke-dasharray: 34 113;
+    animation: spin 1.1s linear infinite;
+    transition: stroke 0.2s ease;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(270deg); }
+  }
+
+  .ring-wrap svg { transform-origin: 26px 26px; }
+
+  #percentLabel {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: -0.2px;
+  }
+
+  .body { flex: 1; min-width: 0; }
+
+  .phase {
+    margin: 0 0 3px;
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: -0.1px;
+    color: var(--text);
+  }
+
+  .detail {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .track {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--track);
+    overflow: hidden;
+  }
+
+  .fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.25s ease, background 0.2s ease;
+  }
+
+  .fill.indeterminate {
+    width: 40% !important;
+    animation: sweep 1.2s ease-in-out infinite;
+  }
+
+  @keyframes sweep {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+  }
+
+  .card.error .phase { color: var(--error); }
+  .card.error .ring-fg { stroke: var(--error); }
+  .card.error #percentLabel { display: none; }
+  .card.error .track { display: none; }
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="ring-wrap">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle class="ring-bg" cx="26" cy="26" r="21" />
+        <circle class="ring-fg" id="ring" cx="26" cy="26" r="21" stroke-dasharray="131.9" stroke-dashoffset="131.9" />
+      </svg>
+      <span id="percentLabel">0%</span>
+    </div>
+    <div class="body">
+      <p class="phase" id="phase">Downloading</p>
+      <p class="detail" id="detail">Fetching the update package…</p>
+      <div class="track">
+        <div class="fill" id="fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CIRCUMFERENCE = 131.9; // 2 * PI * r(21)
+    const ring = document.getElementById("ring");
+    const fill = document.getElementById("fill");
+    const card = document.getElementById("card");
+    const phaseEl = document.getElementById("phase");
+    const detailEl = document.getElementById("detail");
+    const percentLabel = document.getElementById("percentLabel");
+
+    // Tracks which phase is currently displayed so a stray/late progress
+    // callback from a previous phase can never overwrite a newer phase.
+    let currentPhase = "downloading";
+
+    const PHASES = {
+      downloading: { label: "Downloading", detail: "Fetching the update package…", determinate: true },
+      extracting:  { label: "Extracting",  detail: "Unpacking the update…",         determinate: false },
+      installing:  { label: "Installing",  detail: "Copying files into place…",     determinate: false },
+    };
+
+    function applyPhase(key) {
+      currentPhase = key;
+      const p = PHASES[key];
+      phaseEl.textContent = p.label;
+      detailEl.textContent = p.detail;
+
+      if (p.determinate) {
+        ring.classList.remove("indeterminate");
+        fill.classList.remove("indeterminate");
+        percentLabel.style.display = "";
+      } else {
+        ring.classList.add("indeterminate");
+        fill.classList.add("indeterminate");
+        percentLabel.style.display = "none";
+      }
+    }
+
+    function phaseKeyFromText(text) {
+      const t = text.toLowerCase();
+      if (t.includes("extract")) return "extracting";
+      if (t.includes("install")) return "installing";
+      return "downloading";
+    }
+
+    function setProgress(percent) {
+      if (currentPhase !== "downloading") return;
+      const clamped = Math.max(0, Math.min(100, percent));
+      fill.style.width = clamped + "%";
+      ring.style.strokeDashoffset = CIRCUMFERENCE - (CIRCUMFERENCE * clamped) / 100;
+      percentLabel.textContent = clamped + "%";
+    }
+
+    function setStatus(text) {
+      applyPhase(phaseKeyFromText(text));
+    }
+
+    function setError(text) {
+      card.classList.add("error");
+      ring.classList.remove("indeterminate");
+      fill.classList.remove("indeterminate");
+      phaseEl.textContent = "Update failed";
+      detailEl.textContent = text;
+    }
+  </script>
+</body>
+</html>

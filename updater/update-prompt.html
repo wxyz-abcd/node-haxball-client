@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #ffffff;
+    --border: #e3e6eb;
+    --text: #1a1d24;
+    --text-muted: #767e8c;
+    --accent: #12b76a;
+    --accent-hover: #0e9c5a;
+    --track: #edf0f4;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Inter", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 22px 24px 18px;
+  }
+
+  .top { display: flex; align-items: flex-start; gap: 14px; }
+
+  .icon {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(18, 183, 106, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon svg { width: 20px; height: 20px; }
+
+  .title {
+    margin: 2px 0 4px;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.1px;
+  }
+
+  .versions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", monospace;
+    font-size: 12px;
+  }
+
+  .versions .current { color: var(--text-muted); }
+  .versions .arrow { color: var(--text-muted); }
+  .versions .latest { color: var(--accent); font-weight: 600; }
+
+  .msg {
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .actions {
+    margin-top: auto;
+    padding-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 7px;
+    padding: 8px 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+  }
+
+  button:active { transform: scale(0.97); }
+
+  #decline {
+    background: transparent;
+    color: var(--text-muted);
+    border-color: var(--border);
+  }
+  #decline:hover { color: var(--text); border-color: #333a49; }
+
+  #accept {
+    background: var(--accent);
+    color: #0a1410;
+  }
+  #accept:hover { background: var(--accent-hover); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#12b76a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v12" />
+          <path d="M7 10l5 5 5-5" />
+          <path d="M5 20h14" />
+        </svg>
+      </div>
+      <div>
+        <p class="title">Update available</p>
+        <div class="versions">
+          <span class="current" id="currentVersion">—</span>
+          <span class="arrow">→</span>
+          <span class="latest" id="latestVersion">—</span>
+        </div>
+      </div>
+    </div>
+    <p class="msg" id="msg">A new version is ready to install. This will only take a minute.</p>
+    <div class="actions">
+      <button id="decline">Not now</button>
+      <button id="accept">Update now</button>
+    </div>
+  </div>
+
+  <script>
+    function setVersionInfo(current, latest) {
+      document.getElementById("currentVersion").textContent = current;
+      document.getElementById("latestVersion").textContent = latest;
+    }
+    document.getElementById("accept").onclick = () => window.onAccept && window.onAccept();
+    document.getElementById("decline").onclick = () => window.onDecline && window.onDecline();
+  </script>
+</body>
+</html>
