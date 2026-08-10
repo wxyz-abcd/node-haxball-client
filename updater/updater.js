@@ -282,6 +282,17 @@ var getZipDestinationDirectory = function (zipPath, temporaryDirectory) {
     }
   };
 
+  function chmodRecursive(dir, mode) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        chmodRecursive(fullPath, mode);
+      } else if (entry.isFile()) {
+        try { fs.chmodSync(fullPath, mode); } catch(e) {}
+      }
+    }
+  }
+
 
 var pUnpack = {
   /**
@@ -374,8 +385,10 @@ var pUnpack = {
       const zip = new AdmZip(filename);
       zip.extractAllTo(destinationDirectory, true);
 
+      chmodRecursive(destinationDirectory, '755');
+
       const execPath = path.join(destinationDirectory, getExecPathRelativeToPackage(manifest));
-      fs.chmodSync(execPath, '755');
+      //fs.chmodSync(execPath, '755');
       cb(null, execPath);
     } catch (err) {
       cb(err);
