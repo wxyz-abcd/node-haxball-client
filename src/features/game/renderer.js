@@ -330,7 +330,7 @@ export default function(API, params){
     }
     else{
       //gr.circle(0, 0, disc.radius+1);
-      mask.circle(0, 0, disc.radius+1);
+      mask.circle(0, 0, disc.radius);
     }
     gr.rotation = (3.141592653589793*teamColors.angle)/128;
     //var stepWidth = 32/teamColors.inner.length, x=-16;
