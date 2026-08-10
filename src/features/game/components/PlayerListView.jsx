@@ -9,7 +9,6 @@ function PlayerListView({ players, teamId, teamClass, joinLabel, showReset, isAd
 
   const dropped = (e) => {
     const playerId = e.dataTransfer.getData('movePlayer')
-    console.log(e)
     if (e.target.parentElement.className.includes('t-red')) {
       room.setPlayerTeam(playerId, 1)
     } else if (e.target.parentElement.className.includes('t-blue')) {

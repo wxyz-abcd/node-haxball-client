@@ -7,7 +7,6 @@ export default function AuthSetter() {
   const [auth, authSet] = useState(null);
   const authInputChanged = (e) => {
     const value = e.target.value;
-    console.log(value.length);
     if (value.length == 137) setPlayerField('authKey', value);
     authSet(value);
   }

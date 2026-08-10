@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 function LeaveRoomPopup({room, showPopup}) {
     const navigate = useNavigate();
     const handleLeave = () => {
-        room?.leave();
         navigate('/RoomList')
     }
 

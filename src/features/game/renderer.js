@@ -202,11 +202,49 @@ export default function(API, params){
     value: 'native'
   });
 
+  this.defineVariable({
+    name: "playerAvatarTexturePath",
+    description: "texture path",
+    value: null
+  });
+
   var thisRenderer = this, { Point, Team, TeamColors } = Impl.Core;
   thisRenderer.bottomPaddingPx = 0;
   var defaultTeamColors = [new TeamColors(), new TeamColors(), new TeamColors()];
   defaultTeamColors[1].inner.push(15035990);
   defaultTeamColors[2].inner.push(5671397);
+
+  function bakeTextureFill(halfWidth, halfHeight, centerX, centerY){
+    centerX = centerX||0;
+    centerY = centerY||0;
+    var w = Math.max(2, Math.ceil(2*halfWidth)), h = Math.max(2, Math.ceil(2*halfHeight));
+    var img = avatarImage;
+    if (!img || !(img.naturalWidth || img.width))
+      return null;
+    var dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
+    var oversample = Math.max(1, Math.ceil(dpr * (thisRenderer.resolutionScale || 1) * 2));
+    var canvasW = w * oversample, canvasH = h * oversample;
+    var canvas = document.createElement("canvas");
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    var ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    var imgW = img.naturalWidth || img.width, imgH = img.naturalHeight || img.height;
+    var srcSize = Math.min(imgW, imgH);
+    var sx = (imgW - srcSize) / 2, sy = (imgH - srcSize) / 2;
+    ctx.drawImage(img, sx, sy, srcSize, srcSize, 0, 0, canvasW, canvasH);
+    var texture = PIXI.Texture.from(canvas);
+    texture.source.scaleMode = "linear";
+    texture.source.addressMode = "clamp-to-edge";
+    texture.source.resolution = oversample;
+    texture.resolution = oversample;
+    var matrix = new PIXI.Matrix();
+    return {
+      texture,
+      matrix
+    };
+  }
 
   // language-related stuff
 
@@ -247,6 +285,15 @@ export default function(API, params){
 
   var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, playerContainer = null, nameContainer = null, haloContainer = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false, framesInFlight = 0, rendererLifecycleToken = 0, renderBlockedByGPU = false, forceImmediateRender = false;
   var maxFramesInFlight = 2;
+  var avatarImage = null;
+
+  function loadImages(playerAvatar){
+    avatarImage = null;
+    const el = document.createElement("img");
+    el.crossOrigin = "anonymous";
+    el.src = playerAvatar;
+    avatarImage = el;
+  }
 
   function redrawJoint({ gr, dx, dy, color }){
     gr.moveTo(0, 0);
@@ -287,23 +334,36 @@ export default function(API, params){
     }
     gr.rotation = (3.141592653589793*teamColors.angle)/128;
     //var stepWidth = 32/teamColors.inner.length, x=-16;
-    for (var i=0; i<teamColors.inner.length; i++){
-      gr.setFillStyle(Utils.numberToColor(teamColors.inner[i]));
-      //gr.rect(x, -16, stepWidth+4, 32);
-      gr.rect(x, -half, stepWidth+(Math.max(1, disc.radius * 0.125)), size);
-      gr.fill();
-      x+=stepWidth;
-    };
+    if (thisRenderer.playerAvatarTexturePath && player.id == thisRenderer.followPlayerId) {
+      loadImages(thisRenderer.playerAvatarTexturePath);
+      if (discInfo.texture && discInfo.texture?.destroy && !discInfo.texture?.destroyed) discInfo.texture?.destroy();
+      discInfo.texture = null;
+      gr.rotation = 0;
+      const baked = bakeTextureFill(half, half);
+      discInfo.texture = baked.texture;
+      gr.rect(x, -half, size, size);
+      gr.fill({
+        texture: baked.texture,
+        matrix: baked.matrix,
+      });
+    } else
+      for (var i=0; i<teamColors.inner.length; i++){
+        gr.setFillStyle(Utils.numberToColor(teamColors.inner[i]));
+        //gr.rect(x, -16, stepWidth+4, 32);
+        gr.rect(x, -half, stepWidth+(Math.max(1, disc.radius * 0.125)), size);
+        gr.fill();
+        x+=stepWidth;
+      };
     if (thisRenderer.squarePlayers){
       gr.rect(-disc.radius,-disc.radius, 2*disc.radius, 2*disc.radius);
     }
     else{
       gr.circle(0, 0, disc.radius+1);
     }
-    gr.stroke({
+    /*gr.stroke({
       width: thisRenderer.discLineWidth,
       color: player.isKicking ? 0xffffff : 0x000000
-    });
+    });*/
     mask.fill({ color: disc.color });
   };
 
@@ -353,6 +413,12 @@ export default function(API, params){
     discInfo.playerNameText?.destroy();
     discInfo.playerNameMask?.parent?.removeChild(discInfo.playerNameMask);
     discInfo.playerNameMask?.destroy();
+    discInfo.playerStroke?.parent?.removeChild(discInfo.playerStroke);
+    discInfo.playerStroke?.destroy();
+    if (discInfo.texture) {
+      discInfo?.texture?.destroy(true);
+      discInfo.texture = null;
+    }
   }
 
   function _removeDiscByPlayerId(playerId) {
@@ -420,7 +486,9 @@ export default function(API, params){
       gr.rect(-discObj.radius, -discObj.radius, 2 * discObj.radius, 2 * discObj.radius);
     else
       gr.circle(0, 0, discObj.radius + 10);
-    gr.fill({ color: 0x000000, alpha: 0 });
+
+    const bakedDiscTexture = (discObj.playerId == thisRenderer.followPlayerId && thisRenderer.playerAvatarTexturePath) ? bakeTextureFill(discObj.radius, discObj.radius) : null;
+    gr.fill(bakedDiscTexture || { color: Utils.numberToColor(discObj.color) });
     gr.stroke({
       color: 0x000000,
       width: thisRenderer.discLineWidth - 2,
@@ -428,7 +496,7 @@ export default function(API, params){
     });
     stage2.addChild(gr);
 
-    let gr2 = null, avatarText = null, playerNameText = null, playerNameMask = null, avatarMask;
+    let gr2 = null, avatarText = null, playerNameText = null, playerNameMask = null, avatarMask, playerStroke;
 
     if (discObj.playerId !== null && discObj.playerId !== undefined) {
       gr2 = new PIXI.Graphics();
@@ -438,6 +506,12 @@ export default function(API, params){
         gr2.circle(0, 0, discObj.radius + 11);
       gr2.fill({ color: Utils.numberToColor(discObj.color) });
       gr.mask = gr2;
+
+      playerStroke = new PIXI.Graphics();
+      if (thisRenderer.squarePlayers)
+        playerStroke.rect(-discObj.radius, -discObj.radius, 2 * discObj.radius, 2 * discObj.radius);
+      else
+        playerStroke.circle(0, 0, discObj.radius + 11);
 
       avatarText = new PIXI.Text({
         text: "",
@@ -492,13 +566,18 @@ export default function(API, params){
       playerContainer.addChild(gr2);
       playerContainer.addChild(avatarText);
       playerContainer.addChild(avatarMask);
+      playerContainer.addChild(playerStroke);
     }
     // cache prop is an obj with general disc data, such as radius, etc.
     // teamCache prop is an obj with teams cache data, such as color, etc.
     return {
       gr, avatarText, avatarMask, playerNameText, mask: gr2,
       cache: null, teamCache: null, playerNameMask,
-      playerId: discObj.playerId ?? null
+      playerId: discObj.playerId ?? null,
+      texture: bakedDiscTexture,
+      playerStroke,
+      texturePath: thisRenderer.playerAvatarTexturePath,
+      isKicking: discObj.playerId ? thisRenderer.room.getPlayer(discObj.playerId).isKicking : null
     };
   }
 
@@ -507,7 +586,7 @@ export default function(API, params){
       return;
 
     if (stage) stage.destroy({ children: true });
-    
+    if (thisRenderer.playerAvatarTexturePath) loadImages(thisRenderer.playerAvatarTexturePath);
     var {physicsState, stadium} = gameState;
     customDiscInfo = [];
     customJointInfo = [];
@@ -785,9 +864,20 @@ export default function(API, params){
         this.arr.forEach((x)=>{
           stage3.removeChild(x);
         });
+      },
+      destroy: function(){
+        this.arr.forEach((x) => {
+          x.destroy({ children: true, texture: true });
+        });
+        this.arr = [];
       }
     }
     function initTexts(){
+      if (textInfo) {
+        ['timeUp', 'redVictory', 'redScore', 'blueVictory', 'blueScore', 'gamePause'].forEach(key => {
+          textInfo[key]?.destroy?.();
+        });
+      }
       const TextMap = LanguageData[Language.current?.abbr||"GB"];
       textInfo = {
         time: 0, // xc
@@ -1033,16 +1123,24 @@ export default function(API, params){
     const { discs, joints, segments } = roomState.gameState.physicsState;
     if (!customDiscInfo)
       return;
+
+    const {
+      showTeamColors, showAvatars, showPlayerIds, currentPlayerDistinction,
+      followPlayerId, showChatIndicators, squarePlayers, discLineWidth,
+      generalLineWidth, playerAvatarTexturePath
+    } = thisRenderer;
+
     updateLocationIndicators(roomState, geo);
     updateGamePaused(roomState.gameState);
+
     segments.forEach((segment, id)=>{
       if (!segment.vis)
         return;
       const segInfo = customSegmentInfo[id];
       const gr = segInfo.gr;
-      var pos1 = segment.v0.pos, pos2 = segment.v1.pos;
+      const pos1 = segment.v0.pos, pos2 = segment.v1.pos;
       if (0*segment.curveF!=0){
-        var dx = pos2.x-pos1.x, dy = pos2.y-pos1.y;
+        const dx = pos2.x-pos1.x, dy = pos2.y-pos1.y;
         if (dx!=gr.dx || dy!=gr.dy){
           gr.dx = dx;
           gr.dy = dy;
@@ -1051,7 +1149,7 @@ export default function(API, params){
           gr.lineTo(dx, dy);
           gr.stroke({
             color: segment.color,
-            width: thisRenderer.generalLineWidth,
+            width: generalLineWidth,
             alignment: 0.5,
           });
         }
@@ -1059,14 +1157,14 @@ export default function(API, params){
         gr.y = pos1.y;
       }
       else{
-        var center = segment.arcCenter;
-        var deltaX = pos1.x-center.x, deltaY = pos1.y-center.y;
+        const center = segment.arcCenter;
+        const deltaX = pos1.x-center.x, deltaY = pos1.y-center.y;
         if (!segInfo.cache || segInfo.cache.deltaX!== deltaX || segInfo.cache.deltaY!==deltaY) {
           gr.clear();
           gr.arc(0, 0, Math.sqrt(deltaX*deltaX+deltaY*deltaY), Math.atan2(deltaY, deltaX), Math.atan2(pos2.y-center.y, pos2.x-center.x));
           gr.stroke({
             color: segment.color,
-            width: thisRenderer.generalLineWidth,
+            width: generalLineWidth,
             alignment: 0.5,
           });
           segInfo.cache = {deltaX, deltaY};
@@ -1083,71 +1181,105 @@ export default function(API, params){
       const gr = discInfo.gr;
       gr.x = pos.x;
       gr.y = pos.y;
-      if (disc.playerId!==null && disc.playerId!==undefined){
-        const player = roomState.getPlayer(disc.playerId);
-        discInfo.mask.x = pos.x;
-        discInfo.mask.y = pos.y;
-        discInfo.avatarMask.x = pos.x;
-        discInfo.avatarMask.y = pos.y;
-        var teamColors = thisRenderer.showTeamColors ? roomState.teamColors[player.team.id] : defaultTeamColors[player.team.id];
-        
-        // Optimize Avatar Text
-        const avatarStr = thisRenderer.showAvatars ? (player.avatar || player.avatarNumber) : player.avatarNumber;
-        if (!discInfo.textCache || discInfo.textCache.avatar !== avatarStr || discInfo.textCache.avatarColor !== teamColors.text || discInfo.cache.radius !== disc.radius) {
-          discInfo.avatarText.text = avatarStr;
-          discInfo.avatarText.style.fill = teamColors.text;
-          discInfo.avatarText.style.fontSize = disc.radius+1;
-          discInfo.textCache = discInfo.textCache || {};
-          discInfo.textCache.avatar = avatarStr;
-          discInfo.textCache.avatarColor = teamColors.text;
-        }
-        discInfo.avatarText.x = pos.x;
-        discInfo.avatarText.y = pos.y;
 
-        // Optimize Player Name Text
-        if (!thisRenderer.currentPlayerDistinction || player.id !== thisRenderer.followPlayerId) {
-          const nameStr = thisRenderer.showPlayerIds ? `[${player.id}] ${player.name}` : player.name;
-          if (!discInfo.textCache || discInfo.textCache.name !== nameStr) {
-            discInfo.playerNameText.text = nameStr;
-            discInfo.textCache = discInfo.textCache || {};
-            discInfo.textCache.name = nameStr;
-          }
-          discInfo.playerNameText.x = pos.x;
-          discInfo.playerNameText.y = pos.y;
-          if (discInfo.playerNameMask) {
-            discInfo.playerNameMask.x = pos.x;
-            discInfo.playerNameMask.y = pos.y;
-          }
+      if (disc.playerId==null){
+        if (!discInfo.cache || discInfo.cache.color !== disc.color || discInfo.cache.radius !== disc.radius){
+          redrawDisc({gr, disc});
+        }
+        discInfo.cache = { color: disc.color, radius: disc.radius };
+        return;
+      }
+
+      const player = roomState.getPlayer(disc.playerId);
+      const { mask, playerStroke, avatarMask, avatarText, playerNameText, playerNameMask, cache } = discInfo;
+      const radiusChanged = cache?.radius !== disc.radius;
+
+      mask.x = pos.x;
+      mask.y = pos.y;
+      playerStroke.x = pos.x;
+      playerStroke.y = pos.y;
+      avatarMask.x = pos.x;
+      avatarMask.y = pos.y;
+
+      const teamColors = showTeamColors ? roomState.teamColors[player.team.id] : defaultTeamColors[player.team.id];
+
+      const usingTexture = !!playerAvatarTexturePath && player.id === followPlayerId;
+      if (usingTexture){
+        if (avatarText.visible) avatarText.visible = false;
+        if (avatarMask.visible) avatarMask.visible = false;
+      } else {
+        if (!avatarText.visible) avatarText.visible = true;
+        if (!avatarMask.visible) avatarMask.visible = true;
+        const avatarStr = showAvatars ? (player.avatar || player.avatarNumber) : player.avatarNumber;
+        const textCache = discInfo.textCache || (discInfo.textCache = {});
+        if (textCache.avatar !== avatarStr || textCache.avatarColor !== teamColors.text || radiusChanged) {
+          avatarText.text = avatarStr;
+          avatarText.style.fill = teamColors.text;
+          avatarText.style.fontSize = disc.radius+1;
+          textCache.avatar = avatarStr;
+          textCache.avatarColor = teamColors.text;
+        }
+        avatarText.x = pos.x;
+        avatarText.y = pos.y;
+      }
+
+      if (!currentPlayerDistinction || player.id !== followPlayerId) {
+        const nameStr = showPlayerIds ? `[${player.id}] ${player.name}` : player.name;
+        const textCache = discInfo.textCache || (discInfo.textCache = {});
+        if (textCache.name !== nameStr) {
+          playerNameText.text = nameStr;
+          textCache.name = nameStr;
+        }
+        playerNameText.x = pos.x;
+        playerNameText.y = pos.y;
+        if (playerNameMask) {
+          playerNameMask.x = pos.x;
+          playerNameMask.y = pos.y;
+        }
+      } else {
+        const textCache = discInfo.textCache || (discInfo.textCache = {});
+        if (textCache.name !== "") {
+          playerNameText.text = "";
+          textCache.name = "";
+        }
+      }
+
+      const chatIndicator = chatIndicatorInfo[player.id];
+      if (chatIndicator.active && showChatIndicators){
+        chatIndicator.gr.x = pos.x;
+        chatIndicator.gr.y = pos.y-25;
+        chatIndicator.gr.visible = true;
+      } else {
+        chatIndicator.gr.visible = false;
+      }
+
+      if (!discInfo.teamCache || discInfo.isKicking !== player.isKicking || radiusChanged) {
+        const strokeGr = playerStroke;
+        strokeGr.clear();
+        if (squarePlayers) {
+          strokeGr.rect(-disc.radius, -disc.radius, 2 * disc.radius, 2 * disc.radius);
         } else {
-          if (!discInfo.textCache || discInfo.textCache.name !== "") {
-            discInfo.playerNameText.text = "";
-            discInfo.textCache = discInfo.textCache || {};
-            discInfo.textCache.name = "";
-          }
+          strokeGr.circle(0, 0, disc.radius);
         }
-        var chatIndicator = chatIndicatorInfo[player.id];
-        if (chatIndicator.active && thisRenderer.showChatIndicators){
-          chatIndicator.gr.x = disc.pos.x;
-          chatIndicator.gr.y = disc.pos.y-25;
-          chatIndicator.gr.visible = true;
-        }
-        else
-          chatIndicator.gr.visible = false;
-        if (!discInfo.teamCache || discInfo.teamCache.teamId !== player.team.id || discInfo.teamCache.isKicking !== player.isKicking || discInfo.teamCache.colors !== teamColors.inner || discInfo.cache.radius !== disc.radius){
-          redrawPlayerDisc(discInfo, teamColors, disc, player);
-          discInfo.teamCache = {
-            teamId: player.team.id,
-            isKicking: player.isKicking,
-            colors: teamColors.inner
-          };
-        }
+        strokeGr.stroke({
+          width: discLineWidth-2,
+          color: player.isKicking ? 0xffffff : 0x000000
+        });
+        discInfo.isKicking = player.isKicking;
       }
-      else if (!discInfo.cache || discInfo.cache.color !== disc.color || discInfo.cache.radius !== disc.radius){
-        redrawDisc({gr, disc});
-      }
-      discInfo.cache = { color: disc.color, radius: disc.radius };
 
+      if (!discInfo.teamCache || discInfo.teamCache.teamId !== player.team.id || discInfo.teamCache.colors !== teamColors.inner || radiusChanged || discInfo.texturePath !== playerAvatarTexturePath){
+        redrawPlayerDisc(discInfo, teamColors, disc, player);
+        discInfo.teamCache = {
+          teamId: player.team.id,
+          colors: teamColors.inner
+        };
+        discInfo.texturePath = playerAvatarTexturePath;
+      }
+
+      discInfo.cache = { color: disc.color, radius: disc.radius };
     });
+
     joints.forEach((joint, id)=>{
       const jointInfo = customJointInfo[id];
       if (!jointInfo)
@@ -1155,7 +1287,7 @@ export default function(API, params){
       const { gr, dx, dy } = jointInfo;
       const { x: x0, y: y0 } = discs[joint.d0].pos;
       const { x: x1, y: y1 } = discs[joint.d1].pos;
-      var _dx = x1-x0, _dy = y1-y0;
+      const _dx = x1-x0, _dy = y1-y0;
       if (_dx!=dx || _dy!=dy){
         jointInfo.dx = _dx;
         jointInfo.dy = _dy;
@@ -1165,6 +1297,7 @@ export default function(API, params){
       gr.x = x0;
       gr.y = y0;
     });
+
     updateHalo(roomState);
   }
 
@@ -1275,10 +1408,10 @@ export default function(API, params){
 
   this.initialize = function(){
   var bottomEl = document.getElementsByClassName("chatbox-view")[0];
-  var ro = new ResizeObserver(function(entries){
+  this.resizeObserver = new ResizeObserver(function(entries){
     thisRenderer.bottomPaddingPx = entries[0].contentRect.height;
   });
-  ro.observe(bottomEl);
+  this.resizeObserver.observe(bottomEl);
     function loadScript(src, onload){
       var e = document.createElement("script");
       e.onload = onload;
@@ -1336,12 +1469,13 @@ export default function(API, params){
   };
 
   this.finalize = function(){
-    stage?.destroy({children: true, texture: true, textureSource: true});
-    stage2?.destroy({children: true, texture: true, textureSource: true});
-    stage3?.destroy({children: true, texture: true, textureSource: true});
-    rendererObj?.destroy({ removeView: false });
+    stage?.destroy(true);
+    stage2?.destroy(true);
+    stage3?.destroy(true);
+    rendererObj?.destroy(true);
     scriptElem && document.body.removeChild(scriptElem);
     scriptElem = null;
+    if (PIXI) PIXI=null;
     rendererObj = null;
     stage = null;
     stage2 = null;
@@ -1361,6 +1495,9 @@ export default function(API, params){
     textInfo = null;
     locationIndicatorInfo = null;
     chatIndicatorInfo = null;
+    _stopCustomLoop();
+    thisRenderer.resizeObserver?.disconnect();
+    thisRenderer.resizeObserver = null;
   };
 
   var customLoopId = null;
@@ -1561,6 +1698,8 @@ export default function(API, params){
       clearTimeout(customLoopId);
       customLoopId = null;
     }
+    messageChannel.port1.close();
+    messageChannel.port2.close();
   }
 
   this.render = function(){ // render logic here. called inside requestAnimationFrame callback
@@ -1579,12 +1718,6 @@ export default function(API, params){
   this.initialize = function() {
     _origInitialize?.call(thisRenderer);
     _startCustomLoop();
-  };
-
-  var _origFinalize = this.finalize;
-  this.finalize = function() {
-    _stopCustomLoop();
-    _origFinalize?.call(thisRenderer);
   };
 
   this.fps = function(){

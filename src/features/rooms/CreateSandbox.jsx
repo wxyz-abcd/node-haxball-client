@@ -41,7 +41,6 @@ export default function CreateSandbox() {
         room.mixConfig({
           onPlayerJoin: (playerObj) => {
             var {id, auth} = playerObj;
-            console.log("Player joined : ", auth);
             room.setPlayerAdmin(id, true);
           }
         });

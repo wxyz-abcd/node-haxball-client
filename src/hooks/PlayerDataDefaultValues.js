@@ -36,7 +36,8 @@ export default {
       displayMode: 'windowed',
       resolution: 'native',
       zoomCoeff: 1.0,
-      immediateRender: false
+      immediateRender: false,
+      playerAvatarTexturePath: null
     },
     keys: {
       up: ["KeyW", "ArrowUp"],

@@ -12,7 +12,6 @@ export default React.memo(function ChatBox({
   roomRef,
   chat
 }) {
-  const [inputValue, setInputValue] = useState("");
   const [chatHeight, setChatHeight] = useState(height);
   const [isResizing, setIsResizing] = useState(false);
   const startYRef = useRef(0);
@@ -20,8 +19,13 @@ export default React.memo(function ChatBox({
   const chatRef = useRef(chat);
   const setPlayerFieldRef = useRef(setPlayerField);
   const [chatRows, setChatRows] = useState([]);
+  const MAX_CHAT_ROWS = 200;
+
   useImperativeHandle(ref, () => ({
-    addRow: (row) => setChatRows(prev => [...prev, row]),
+    addRow: (row) => setChatRows(prev => {
+      const next = [...prev, row];
+      return next.length > MAX_CHAT_ROWS ? next.slice(next.length - MAX_CHAT_ROWS) : next;
+    }),
     clear: () => setChatRows([]),
   }), []);
 
@@ -87,6 +91,7 @@ export default React.memo(function ChatBox({
   }, [mentionIndex, mentionOpen]);
 
   const closeMention = () => {
+    if (!mentionOpen && mentionAtPosRef.current === -1) return;
     setMentionOpen(false);
     setMentionQuery("");
     setMentionIndex(0);
@@ -100,7 +105,7 @@ export default React.memo(function ChatBox({
     const triggerIndex = Math.max(atIndex, hashIndex);
 
     if (triggerIndex === -1) {
-      closeMention();
+      if (mentionOpen) closeMention();
       return;
     }
 
@@ -108,14 +113,14 @@ export default React.memo(function ChatBox({
     const query = textBeforeCursor.slice(triggerIndex + 1);
 
     if (/\s/.test(query)) {
-      closeMention();
+      if (mentionOpen) closeMention();
       return;
     }
 
     mentionAtPosRef.current = triggerIndex;
     setMentionTrigger(trigger);
     setMentionQuery(query);
-    setMentionOpen(true);
+    if (!mentionOpen) setMentionOpen(true);
     setMentionIndex(0);
   };
 
@@ -131,16 +136,17 @@ export default React.memo(function ChatBox({
   };
 
   const selectMention = (selectedPlayer) => {
-    if (!selectedPlayer) return;
+    if (!selectedPlayer || !chatInputRef.current) return;
 
     const atPos = mentionAtPosRef.current;
     if (atPos === -1) return;
 
-    const before = inputValue.slice(0, atPos);
-    const after = inputValue.slice(atPos + 1 + mentionQuery.length);
+    const currentVal = chatInputRef.current.value;
+    const before = currentVal.slice(0, atPos);
+    const after = currentVal.slice(atPos + 1 + mentionQuery.length);
 
     let insertion = '';
-    if (mentionTrigger == "#") {
+    if (mentionTrigger === "#") {
       insertion = `#${selectedPlayer.id} `;
     } else {
       insertion = `@${selectedPlayer.name.replaceAll(' ', '_')} `;
@@ -149,7 +155,7 @@ export default React.memo(function ChatBox({
     const newValue = `${before}${insertion}${after}`;
     const newCursorPos = before.length + insertion.length;
 
-    setInputValue(newValue);
+    chatInputRef.current.value = newValue;
     closeMention();
 
     setTimeout(() => {
@@ -161,9 +167,7 @@ export default React.memo(function ChatBox({
   };
 
   const handleInputChange = (e) => {
-    const value = e.target.value;
-    setInputValue(value);
-    updateMentionState(value, e.target.selectionStart);
+    updateMentionState(e.target.value, e.target.selectionStart);
   };
 
   const inputKeyDown = (e) => {
@@ -204,8 +208,10 @@ export default React.memo(function ChatBox({
     }
 
     if (e.code === "Enter" || e.code === "NumpadEnter") {
-      onChatSubmit(inputValue);
-      setInputValue("");
+      e.preventDefault();
+      const value = chatInputRef.current ? chatInputRef.current.value : "";
+      onChatSubmit(value);
+      if (chatInputRef.current) chatInputRef.current.value = "";
       closeMention();
     }
   };
@@ -297,7 +303,6 @@ export default React.memo(function ChatBox({
         <div className="input">
           <input
             ref={chatInputRef}
-            value={inputValue}
             onChange={handleInputChange}
             onKeyDown={inputKeyDown}
             data-hook="input"

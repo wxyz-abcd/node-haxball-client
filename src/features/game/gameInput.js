@@ -80,7 +80,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
         7: 2.50
     }
 
-    const gameKeysHandler = new GameKeysHandler(keys, room, chatInput);
+    let gameKeysHandler = new GameKeysHandler(keys, room, chatInput);
 
     const handleKeyDown = (e) => {
         if (e.repeat) return;
@@ -176,6 +176,7 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
             delete room._hasPendingKeyState;
             delete room._queuePendingKeyState;
             delete room._flushPendingKeyState;
+            gameKeysHandler = null;
         },
         setKeys: (newKeys) => gameKeysHandler.setKeys(newKeys),
     };

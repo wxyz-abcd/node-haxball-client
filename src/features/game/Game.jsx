@@ -369,7 +369,10 @@ export default function Game({ roomRef, usingCustomAPI }) {
   useEffect(() => {
     const room = roomRef?.current;
     const canvas = canvasRef.current;
-    if (!room || !canvas) return;
+    if (!room || !canvas) {
+      return
+    };
+    let cancelled = false;
     canvas.focus();
     setGameStarted(!!room.gameState);
     setPlayers([...room.players]);
@@ -387,19 +390,24 @@ export default function Game({ roomRef, usingCustomAPI }) {
       .then(([chatB, crowdB, goalB, hiB, joinB, kickB, leaveB]) => {
         s.chat = chatB; s.crowd = crowdB; s.goal = goalB; s.highlight = hiB; s.join = joinB; s.kick = kickB; s.leave = leaveB;
       }).catch(err => { console.warn("sound load", err); });
-
+    let defaultRendererObj;
     const initRenderer = async () => {
       try {
         const imgs = await Promise.all([grass, concrete, concrete2, typing].map(loadImage));
+        if (cancelled) return;
         var counter = 0;
-        const defaultRendererObj = new defaultRenderer(API, {
+        defaultRendererObj = new defaultRenderer(API, {
           canvas,
           paintGame: true,
           images: { grass: imgs[0], concrete: imgs[1], concrete2: imgs[2], typing: imgs[3] },
           onRequestAnimationFrame: () => {}
         });
+        if (cancelled) {
+          defaultRendererObj.finalize();
+          return;
+        }
         setRendererObj(defaultRendererObj);
-        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "showInputLag", "targetFPS", "displayMode", "resolution"]
+        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "showInputLag", "targetFPS", "displayMode", "resolution", "playerAvatarTexturePath"]
         for (let i = 0; i < rendererOptions.length; i++) {
             defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
         }
@@ -418,11 +426,19 @@ export default function Game({ roomRef, usingCustomAPI }) {
     initRenderer();
 
     return () => {
+      cancelled = true;
       API.Callback.remove('Wheel')
-      try {
-        // leave() will detach everything maybe
-        room.leave();
-      } catch (e) { /* ignore */ }
+      room.leave();
+      room.setRenderer(null);
+      defaultRendererObj = null;
+      room.renderer = null;
+      if (soundRef.current && soundRef.current.audio) {
+          soundRef.current.audio.close();
+      }
+      if (roomRef) {
+          roomRef.current = null;
+      }
+      setPopup(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -508,6 +524,22 @@ export default function Game({ roomRef, usingCustomAPI }) {
     };
     room.onAfterScoreLimitChange = (value) => setScoreLimit(value);
     room.onAfterTimeLimitChange = (value) => setTimeLimit(value);
+    return () => {
+      room.onAfterStadiumChange = null;
+      room.onAfterTeamGoal = null;
+      room.onAfterPlayerAdminChange = null;
+      room.onAfterPlayerTeamChange = null;
+      room.onAfterPlayerChat = null;
+      room.onAfterPlayerJoin = null;
+      room.onAfterPlayerLeave = null;
+      room.onAfterTeamsLockChange = null;
+      room.onAfterGameStop = null;
+      room.onAfterGameStart = null;
+      room.onAfterAnnouncement = null;
+      room.onAfterPlayerBallKick = null;
+      room.onAfterScoreLimitChange = null;
+      room.onAfterTimeLimitChange = null;
+    }
   }, [API.Impl.Core.Team.byId, chatApi, player.sound, roomRef, soundRef]);
 
   useEffect(() => {

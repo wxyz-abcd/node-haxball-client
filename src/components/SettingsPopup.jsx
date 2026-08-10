@@ -20,7 +20,7 @@ function SettingsPopup({onClose, roomRef /*PlayerDataProvider*/}) {
       case "sound": return <SoundContent player={player} setPlayerField={setPlayerFieldCb} />;
       case "video": return <VideoContent player={player} setPlayerField={setPlayerFieldCb} roomRef={roomRef} />;
       case "input": return <InputContent player={player} setPlayerField={setPlayerFieldCb} />;
-      case "misc": return <MiscContent player={player} setPlayerField={setPlayerFieldCb} />;
+      case "misc": return <MiscContent player={player} setPlayerField={setPlayerFieldCb} roomRef={roomRef} />;
       case "theme": return <ThemeContent />;
       default: return null;
     }

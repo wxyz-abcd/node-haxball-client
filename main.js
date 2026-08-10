@@ -134,7 +134,6 @@ if (updateInstallArg) {
       return;
     }
     if (newerVersionExists) {
-      console.log(remoteManifest);
       showUpdatePrompt(remoteManifest);
     } else {
       openMainWindow();

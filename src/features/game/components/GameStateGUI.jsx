@@ -11,8 +11,8 @@ export default function GameStateGUI({ roomRef }) {
 
   useEffect(() => {
     // We poll gameState to avoid binding re-renders to the 60fps renderer
-    const oldGUIValues = {};
-    const interval = setInterval(() => {
+    let oldGUIValues = {};
+    let interval = setInterval(() => {
       const room = roomRef.current;
       if (!room || !room.gameState) return;
       const gameState = room.gameState;
@@ -44,7 +44,11 @@ export default function GameStateGUI({ roomRef }) {
       if (oldGUIValues.s2 !== ss2) { setS2("" + ss2); oldGUIValues.s2 = ss2; }
     }, 500); // Check twice a second
 
-    return () => clearInterval(interval);
+    return () => {
+      oldGUIValues = null;
+      clearInterval(interval)
+      interval = null
+    };
   }, [roomRef]);
 
   return (

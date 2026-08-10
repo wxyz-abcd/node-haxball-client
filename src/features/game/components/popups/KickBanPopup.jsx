@@ -3,7 +3,6 @@ import { useState } from "react"
 function KickBanPopup({ clickedPlayer, showPopup, room }) {
     const [ban, setBan] = useState(false)
     const [reason, setReason] = useState(null)
-    console.log(ban)
     const handleKickButton = () => {
         room.kickPlayer(clickedPlayer.id, reason, ban)
         showPopup(null)

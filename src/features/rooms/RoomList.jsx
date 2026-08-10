@@ -43,10 +43,18 @@ function RoomList() {
   const [popupComponent, setPopupComponent] = useState(null);
   const [popupProps, setPopupProps] = useState({});
   const navigate = useNavigate();
-  const join = useCallback((roomId) => navigate(`/JoinRoom/${roomId}`), [navigate]);
+  //const join = useCallback((roomId) => navigate(`/JoinRoom/${roomId}`), [navigate]);
   const closePopup = useCallback(()=>{
     setPopupComponent(null);
     setPopupProps({});
+  }, []);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   /** Opens the InputDialog popup with a promise-based API */
@@ -148,8 +156,13 @@ function RoomList() {
   }, []);
   const refresh = useCallback(() => {
     setRooms([]);
-    if (player.geo)
-      getRooms(player.geo).then(setRooms);
+    if (player.geo) {
+      getRooms(player.geo).then((data) => {
+        if (isMountedRef.current) {
+          setRooms(data);
+        }
+      });
+    }
   }, [player.geo]);
   const goToNameForm = useCallback(() => navigate('/'), [navigate]);
   const goToHeadless = useCallback(() => navigate('/Headless'), [navigate]);
@@ -167,11 +180,17 @@ function RoomList() {
   }, [filteredRooms]);
 
   useEffect(() => {
-    const ps = new PerfectScrollbar(containerRef.current);
+    const container = containerRef.current;
+    if (!container) return;
+
+    const ps = new PerfectScrollbar(container);
     psRef.current = ps;
+
     return () => {
       psRef.current = null;
-      ps.destroy();
+      if (ps) {
+        ps.destroy();
+      }
     };
   }, []);
   

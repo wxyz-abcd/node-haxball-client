@@ -36,7 +36,6 @@ function StadiumPickPopup({ room, showPopup }) {
                 const keys = event.target.result;
                 const customIndex = indexSelected - 10;
                 const keyToDelete = keys[customIndex];
-                console.log(customIndex)
                 if (keyToDelete === undefined) return;
 
                 const deleteRequest = objectStore.delete(keyToDelete);

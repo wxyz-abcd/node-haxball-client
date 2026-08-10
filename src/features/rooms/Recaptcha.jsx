@@ -48,7 +48,6 @@ export default function Recaptcha({ onSuccess, roomData }) {
     var observerInterval;
     function observeChanges(){
       observerInterval = setInterval(()=>{
-        console.log("interval");
         if (!ifRef.current.contentWindow.document.body.getElementsByTagName("form")[0]){
           clearInterval(observerInterval);
           try{
@@ -69,7 +68,6 @@ export default function Recaptcha({ onSuccess, roomData }) {
           catch(ex2){
             chrome.webRequest.onCompleted.removeListener(fOnCompleted, {urls: ["https://www.haxball.com/rs/api/*"]});
             chrome.webRequest.handlerBehaviorChanged();
-            console.log("error:", ex2);
             //reset();
           }
         }
@@ -77,7 +75,6 @@ export default function Recaptcha({ onSuccess, roomData }) {
     }
     function fOnCompleted(details) {
       if (details.statusCode!=200){
-        console.log("error:", details);
         //reset();
         return;
       }

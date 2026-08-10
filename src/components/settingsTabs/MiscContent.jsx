@@ -1,11 +1,10 @@
 import FlagSelector from "./MiscComponents/FlagSelector";
 import LanguageSelector from "./MiscComponents/LanguageSelector";
 import AuthSetter from "./MiscComponents/AuthSetter";
+import AvatarSelector from "./MiscComponents/AvatarSelector";
 import { languageLoaders } from "../../utils/languageLoaders";
-import { usePlayerData } from "../../hooks/usePlayerData";
 
-export default function MiscContent() {
-  const { player, setPlayerField } = usePlayerData();
+export default function MiscContent({ player, setPlayerField, roomRef }) {
   const selectedFlag = (flag) => {
     setPlayerField("geo", { ...player.geo, flag});
   };
@@ -32,6 +31,11 @@ export default function MiscContent() {
       setPlayerField("language", lang);
     });
   };
+  const selectedAvatar = (path) => {
+    setPlayerField("renderer", { ...player.renderer, "playerAvatarTexturePath": path });
+    if (roomRef?.renderer) roomRef.renderer.playerAvatarTexturePath = path;
+    //rendererChanged("playerAvatarTexturePath", path);
+  };
 
   return (
     <div
@@ -45,6 +49,7 @@ export default function MiscContent() {
       <FlagSelector onSelect={selectedFlag} />
       <LanguageSelector onSelect={selectedLang} />
       <AuthSetter></AuthSetter>
+      <AvatarSelector onSelect={selectedAvatar} selected={player.renderer.playerAvatarTexturePath||null}/>
     </div>
   );
 }

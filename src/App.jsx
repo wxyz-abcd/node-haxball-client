@@ -19,7 +19,6 @@ useEffect(() => {
 
   const load = languageLoaders[player.language];
   if (!load) {
-    console.log(load)
     languageLoaders.english().then((mod) => {
       API.Language.current = mod.default ?? mod;
     });

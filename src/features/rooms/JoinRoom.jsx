@@ -75,7 +75,6 @@ export default function JoinRoom() {
         });
       },
       onOpen: () => {
-        console.log("Successfully joined room", roomId);
         setJoined(true)
       },
       onClose: async (err) => {

@@ -365,14 +365,21 @@ var pUnpack = {
    * @private
    */
   linux32: function (filename, cb, manifest, temporaryDirectory) {
-    //filename fix
-    child_process.exec('tar -zxvf "' + filename + '" >/dev/null', { cwd: temporaryDirectory }, function (err) {
-      if (err) {
-        console.log(err);
-        return cb(err);
+    var destinationDirectory = getZipDestinationDirectory(filename, temporaryDirectory)
+    try {
+      if (fs.existsSync(destinationDirectory)) {
+        deleteSync(destinationDirectory, { force: true });
       }
-      cb(null, path.join(temporaryDirectory, getExecPathRelativeToPackage(manifest)));
-    })
+
+      const zip = new AdmZip(filename);
+      zip.extractAllTo(destinationDirectory, true);
+
+      const execPath = path.join(destinationDirectory, getExecPathRelativeToPackage(manifest));
+      fs.chmodSync(execPath, '755');
+      cb(null, execPath);
+    } catch (err) {
+      cb(err);
+    }
   }
 };
 pUnpack.linux64 = pUnpack.linux32;
