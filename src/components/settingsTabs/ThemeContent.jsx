@@ -1,7 +1,17 @@
 import { useState, useCallback, useRef } from 'react';
 import { useTheme } from '../../themes/ThemeContext.jsx';
-import { VARIABLE_GROUPS, expandThemeVariables } from '../../themes/themeUtils.js';
+import { VARIABLE_GROUPS, DERIVED_VAR_CONFIG, expandThemeVariables } from '../../themes/themeUtils.js';
 import { usePlayerData } from '../../hooks/usePlayerData.jsx';
+
+function computeInitialCustomDerived(vars) {
+  const set = new Set();
+  Object.values(DERIVED_VAR_CONFIG).forEach(derivedList => {
+    derivedList.forEach(d => {
+      if (vars[d.key] !== undefined) set.add(d.key);
+    });
+  });
+  return set;
+}
 
 /**
  * Theme settings tab. Contains:
@@ -29,6 +39,7 @@ export default function ThemeContent() {
   const [editName, setEditName] = useState('');
   const [editVars, setEditVars] = useState({});
   const [editId, setEditId] = useState(null); // null for new, string for editing existing
+  const [customDerived, setCustomDerived] = useState(new Set());
   const [importError, setImportError] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -48,6 +59,7 @@ export default function ThemeContent() {
       setEditName('My Theme');
       setEditVars({ ...current.variables });
       setEditId(null);
+      setCustomDerived(computeInitialCustomDerived(current.variables));
       setEditing(true);
     }
   }, [getTheme, activeThemeId]);
@@ -59,6 +71,7 @@ export default function ThemeContent() {
       setEditName(theme.name);
       setEditVars({ ...theme.variables });
       setEditId(theme.id);
+      setCustomDerived(computeInitialCustomDerived(theme.variables));
       setEditing(true);
     }
   }, [getTheme, activeThemeId]);
@@ -80,6 +93,34 @@ export default function ThemeContent() {
       return updated;
     });
   }, [previewTheme]);
+
+  const handleToggleDerived = useCallback((baseKey, derivedList) => {
+    const turningOn = !derivedList.every(d => customDerived.has(d.key));
+
+    setCustomDerived(prev => {
+      const next = new Set(prev);
+      derivedList.forEach(d => (turningOn ? next.add(d.key) : next.delete(d.key)));
+      return next;
+    });
+
+    setEditVars(prev => {
+      const updated = { ...prev };
+      if (turningOn) {
+        const baseVal = updated[baseKey];
+        derivedList.forEach(d => {
+          if (updated[d.key] === undefined && baseVal) {
+            updated[d.key] = d.compute(baseVal);
+          }
+        });
+      } else {
+        derivedList.forEach(d => {
+          delete updated[d.key];
+        });
+      }
+      previewTheme(expandThemeVariables(updated));
+      return updated;
+    });
+  }, [previewTheme, customDerived]);
 
   // ── Background image toggle ──
   const handleBgImageToggle = useCallback(() => {
@@ -202,43 +243,106 @@ export default function ThemeContent() {
               {group.vars.map(v => {
                 const currentVal = editVars[v.key] || '';
                 const isColor = /^#[0-9a-fA-F]{3,8}$/.test(currentVal);
+                const derivedList = DERIVED_VAR_CONFIG[v.key];
+                const isCustomizing = derivedList && derivedList.every(d => customDerived.has(d.key));
                 return (
-                  <div key={v.key} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: 3,
-                    padding: '2px 4px',
-                    borderRadius: 3,
-                  }}>
-                    <span style={{ fontSize: 13, flex: 1 }}>{v.label}</span>
-                    {isColor ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace' }}>{currentVal}</span>
+                  <div key={v.key} style={{ marginBottom: 3 }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '2px 4px',
+                      borderRadius: 3,
+                    }}>
+                      <span style={{ fontSize: 13, flex: 1 }}>{v.label}</span>
+                      {isColor ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace' }}>{currentVal}</span>
+                          <input
+                            type="color"
+                            value={currentVal.length === 4 ?
+                              '#' + currentVal[1] + currentVal[1] + currentVal[2] + currentVal[2] + currentVal[3] + currentVal[3] :
+                              currentVal
+                            }
+                            onChange={e => handleColorChange(v.key, e.target.value)}
+                            style={{
+                              width: 28,
+                              height: 22,
+                              border: 'none',
+                              padding: 0,
+                              background: 'none',
+                              cursor: 'pointer',
+                            }}
+                          />
+                        </div>
+                      ) : (
                         <input
-                          type="color"
-                          value={currentVal.length === 4 ?
-                            '#' + currentVal[1] + currentVal[1] + currentVal[2] + currentVal[2] + currentVal[3] + currentVal[3] :
-                            currentVal
-                          }
+                          type="text"
+                          value={currentVal}
                           onChange={e => handleColorChange(v.key, e.target.value)}
-                          style={{
-                            width: 28,
-                            height: 22,
-                            border: 'none',
-                            padding: 0,
-                            background: 'none',
-                            cursor: 'pointer',
-                          }}
+                          style={{ width: 120, height: 22, padding: '0 6px', fontSize: 12 }}
                         />
+                      )}
+                    </div>
+
+                    {/* Manual override toggle for auto-derived hover/active/etc. */}
+                    {derivedList && (
+                      <div style={{ marginLeft: 10, marginTop: 1, marginBottom: 2 }}>
+                        <label style={{
+                          fontSize: 11,
+                          opacity: 0.65,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={isCustomizing}
+                            onChange={() => handleToggleDerived(v.key, derivedList)}
+                            style={{ width: 12, height: 12 }}
+                          />
+                          Personalizar {derivedList.map(d => d.label).join(' / ')}
+                        </label>
+
+                        {isCustomizing && (
+                          <div style={{ marginTop: 3, marginLeft: 2 }}>
+                            {derivedList.map(d => {
+                              const dVal = editVars[d.key] || '';
+                              return (
+                                <div key={d.key} style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  marginBottom: 3,
+                                }}>
+                                  <span style={{ fontSize: 12, opacity: 0.75 }}>{d.label}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace' }}>{dVal}</span>
+                                    <input
+                                      type="color"
+                                      value={dVal.length === 4 ?
+                                        '#' + dVal[1] + dVal[1] + dVal[2] + dVal[2] + dVal[3] + dVal[3] :
+                                        (dVal || '#000000')
+                                      }
+                                      onChange={e => handleColorChange(d.key, e.target.value)}
+                                      style={{
+                                        width: 28,
+                                        height: 22,
+                                        border: 'none',
+                                        padding: 0,
+                                        background: 'none',
+                                        cursor: 'pointer',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={currentVal}
-                        onChange={e => handleColorChange(v.key, e.target.value)}
-                        style={{ width: 120, height: 22, padding: '0 6px', fontSize: 12 }}
-                      />
                     )}
                   </div>
                 );

@@ -46,55 +46,58 @@ export function hexToRgbString(hex) {
 }
 
 /**
- * Given a partial theme (user-defined base colors), auto-generate the full
- * set of CSS variables including hover/active variants.
- * 
- * The user only needs to define the base colors; hover = lighten(15%),
- * active = darken(15%) are computed automatically.
+ * Base -> derived variable relationships. This is the single source of
+ * truth used both by expandThemeVariables (auto-fill on save/preview) and
+ * by the theme editor UI (to offer a "customize" override per base color).
+ *
+ * Each entry maps a base CSS variable key to the list of variables that get
+ * auto-derived from it, along with how to compute the default value.
+ */
+const BUTTON_FAMILIES = ['btn-primary', 'btn-danger', 'btn-success', 'btn-cancel', 'btn-info'];
+
+export const DERIVED_VAR_CONFIG = {};
+
+for (const family of BUTTON_FAMILIES) {
+  const key = `--${family}`;
+  DERIVED_VAR_CONFIG[key] = [
+    { key: `${key}-hover`, label: 'Hover', compute: (v) => lighten(v, 15) },
+    { key: `${key}-active`, label: 'Active', compute: (v) => darken(v, 15) },
+  ];
+}
+
+DERIVED_VAR_CONFIG['--bg-primary'] = [
+  { key: '--bg-hover', label: 'Hover', compute: (v) => lighten(v, 12) },
+  { key: '--bg-selected', label: 'Selected', compute: (v) => lighten(v, 18) },
+  { key: '--bg-odd-row', label: 'Odd row', compute: (v) => lighten(v, 5) },
+  { key: '--bg-player-hover', label: 'Player hover', compute: (v) => lighten(v, 3) },
+  { key: '--scrollbar-thumb', label: 'Scrollbar thumb', compute: (v) => lighten(v, 25) },
+  { key: '--scrollbar-thumb-hover', label: 'Scrollbar thumb hover', compute: (v) => lighten(v, 35) },
+  { key: '--scrollbar-alt', label: 'Scrollbar alt', compute: (v) => lighten(v, 40) },
+];
+
+/**
+ * Given a partial theme (user-defined base colors, plus any derived
+ * variables the user chose to customize), auto-generate the full set of
+ * CSS variables. Anything already present in baseVars is left untouched —
+ * that's what lets the editor's "customize" toggle override a derived
+ * value: once it's set explicitly, this function will never overwrite it.
  */
 export function expandThemeVariables(baseVars) {
   const expanded = { ...baseVars };
 
-  // Auto-generate hover/active for button families
-  const buttonFamilies = ['btn-primary', 'btn-danger', 'btn-success', 'btn-cancel', 'btn-info'];
-  for (const family of buttonFamilies) {
-    const key = `--${family}`;
-    if (expanded[key] && !expanded[`${key}-hover`]) {
-      expanded[`${key}-hover`] = lighten(expanded[key], 15);
-    }
-    if (expanded[key] && !expanded[`${key}-active`]) {
-      expanded[`${key}-active`] = darken(expanded[key], 15);
+  for (const [baseKey, derivedList] of Object.entries(DERIVED_VAR_CONFIG)) {
+    const baseVal = expanded[baseKey];
+    if (!baseVal) continue;
+    for (const derived of derivedList) {
+      if (!expanded[derived.key]) {
+        expanded[derived.key] = derived.compute(baseVal);
+      }
     }
   }
 
-  // Auto-generate bg-hover and bg-selected from bg-primary if not set
-  if (expanded['--bg-primary'] && !expanded['--bg-hover']) {
-    expanded['--bg-hover'] = lighten(expanded['--bg-primary'], 12);
-  }
-  if (expanded['--bg-primary'] && !expanded['--bg-selected']) {
-    expanded['--bg-selected'] = lighten(expanded['--bg-primary'], 18);
-  }
-  if (expanded['--bg-primary'] && !expanded['--bg-odd-row']) {
-    expanded['--bg-odd-row'] = lighten(expanded['--bg-primary'], 5);
-  }
-  if (expanded['--bg-primary'] && !expanded['--bg-player-hover']) {
-    expanded['--bg-player-hover'] = lighten(expanded['--bg-primary'], 3);
-  }
-
-  // Auto-generate bg-primary-rgb from bg-primary
+  // bg-primary-rgb is a plain derived string, never user-editable as a color
   if (expanded['--bg-primary']) {
     expanded['--bg-primary-rgb'] = hexToRgbString(expanded['--bg-primary']);
-  }
-
-  // Auto-generate scrollbar colors from bg-primary
-  if (expanded['--bg-primary'] && !expanded['--scrollbar-thumb']) {
-    expanded['--scrollbar-thumb'] = lighten(expanded['--bg-primary'], 25);
-  }
-  if (expanded['--bg-primary'] && !expanded['--scrollbar-thumb-hover']) {
-    expanded['--scrollbar-thumb-hover'] = lighten(expanded['--bg-primary'], 35);
-  }
-  if (expanded['--bg-primary'] && !expanded['--scrollbar-alt']) {
-    expanded['--scrollbar-alt'] = lighten(expanded['--bg-primary'], 40);
   }
 
   return expanded;
