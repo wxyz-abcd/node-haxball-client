@@ -2,7 +2,7 @@
   "name": "node-haxball-client",
   "main": "main.js",
   "private": true,
-  "version": "1.1.4",
+  "version": "1.1.5",
   "manifestUrl": "https://github.com/wxyz-abcd/node-haxball-client/releases/download/latest/manifest.json",
   "packages": {
     "win": {
