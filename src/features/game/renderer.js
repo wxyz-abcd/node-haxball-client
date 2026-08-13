@@ -309,9 +309,10 @@ export default function(API, params){
     gr.clear();
     gr.circle(0, 0, disc.radius);
     const transparent = (disc.color|0)==-1;
-    if (!transparent)
+    if (!transparent){
       gr.setFillStyle(Utils.numberToColor(disc.color));
-    gr.fill();
+      gr.fill();
+    }
     gr.stroke();
   }
 
@@ -488,7 +489,9 @@ export default function(API, params){
       gr.circle(0, 0, discObj.radius + 10);
 
     const bakedDiscTexture = (discObj.playerId == thisRenderer.followPlayerId && thisRenderer.playerAvatarTexturePath) ? bakeTextureFill(discObj.radius, discObj.radius) : null;
-    gr.fill(bakedDiscTexture || { color: Utils.numberToColor(discObj.color) });
+    const discTransparent = (discObj.color|0)==-1;
+    if (bakedDiscTexture || !discTransparent)
+      gr.fill(bakedDiscTexture || { color: Utils.numberToColor(discObj.color) });
     gr.stroke({
       color: 0x000000,
       width: thisRenderer.discLineWidth - 2,
@@ -732,25 +735,28 @@ export default function(API, params){
       const { x: x0, y: y0 } = physicsState.vertices[segmentObj.v0.id].pos;
       const { x: x1, y: y1 } = physicsState.vertices[segmentObj.v1.id].pos;
       const gr = new Graphics();
+      const segmentTransparent = (segmentObj.color|0)==-1;
       if (!segmentObj.arcCenter){
         gr.moveTo(0, 0);
         gr.lineTo(x1-x0, y1-y0);
-        gr.stroke({
-          color: segmentObj.color,
-          width: thisRenderer.generalLineWidth,
-          alignment: 0.5,
-        });
+        if (!segmentTransparent)
+          gr.stroke({
+            color: segmentObj.color,
+            width: thisRenderer.generalLineWidth,
+            alignment: 0.5,
+          });
         gr.x = x0;
         gr.y = y0;
       }
       else{
         var { x: cx, y: cy } = segmentObj.arcCenter;
         gr.arc(0, 0, segmentObj.arcRadius, Math.atan2(y0-cy, x0-cx), Math.atan2(y1-cy, x1-cx));
-        gr.stroke({
-          color: segmentObj.color,
-          width: thisRenderer.generalLineWidth,
-          alignment: 0.5,
-        });
+        if (!segmentTransparent)
+          gr.stroke({
+            color: segmentObj.color,
+            width: thisRenderer.generalLineWidth,
+            alignment: 0.5,
+          });
         gr.x = cx;
         gr.y = cy;
       }
@@ -1139,6 +1145,7 @@ export default function(API, params){
       const segInfo = customSegmentInfo[id];
       const gr = segInfo.gr;
       const pos1 = segment.v0.pos, pos2 = segment.v1.pos;
+      const segmentTransparent = (segment.color|0)==-1;
       if (0*segment.curveF!=0){
         const dx = pos2.x-pos1.x, dy = pos2.y-pos1.y;
         if (dx!=gr.dx || dy!=gr.dy){
@@ -1147,11 +1154,12 @@ export default function(API, params){
           gr.clear();
           gr.moveTo(0, 0);
           gr.lineTo(dx, dy);
-          gr.stroke({
-            color: segment.color,
-            width: generalLineWidth,
-            alignment: 0.5,
-          });
+          if (!segmentTransparent)
+            gr.stroke({
+              color: segment.color,
+              width: generalLineWidth,
+              alignment: 0.5,
+            });
         }
         gr.x = pos1.x;
         gr.y = pos1.y;
@@ -1162,11 +1170,12 @@ export default function(API, params){
         if (!segInfo.cache || segInfo.cache.deltaX!== deltaX || segInfo.cache.deltaY!==deltaY) {
           gr.clear();
           gr.arc(0, 0, Math.sqrt(deltaX*deltaX+deltaY*deltaY), Math.atan2(deltaY, deltaX), Math.atan2(pos2.y-center.y, pos2.x-center.x));
-          gr.stroke({
-            color: segment.color,
-            width: generalLineWidth,
-            alignment: 0.5,
-          });
+          if (!segmentTransparent)
+            gr.stroke({
+              color: segment.color,
+              width: generalLineWidth,
+              alignment: 0.5,
+            });
           segInfo.cache = {deltaX, deltaY};
         }
         gr.x = center.x;
