@@ -14,6 +14,7 @@ export default React.memo(function ChatBox({
 }) {
   const [chatHeight, setChatHeight] = useState(height);
   const [isResizing, setIsResizing] = useState(false);
+  const chatContainerRef = useRef(null);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
   const chatRef = useRef(chat);
@@ -56,7 +57,10 @@ export default React.memo(function ChatBox({
         Math.max(startHeightRef.current + startYRef.current - event.clientY, MIN_CHAT_HEIGHT),
         MAX_CHAT_HEIGHT
       );
-      setChatHeight(nextHeight);
+      //setChatHeight(nextHeight);
+      if (chatContainerRef.current) {
+        chatContainerRef.current.style.height = `${nextHeight}px`;
+      }
     };
 
     const handlePointerUp = (event) => {
@@ -236,7 +240,7 @@ export default React.memo(function ChatBox({
   mentionItemRefs.current = [];
 
   return (
-    <div className={`chatbox-view${isResizing ? " dragging" : ""}`} style={{ height: `${chatHeight}px` }}>
+    <div ref={chatContainerRef} className={`chatbox-view${isResizing ? " dragging" : ""}`} style={{ height: `${chatHeight}px` }}>
       <div tabIndex={-1} className="chatbox-view-contents">
         <div className="autocompletebox" data-hook="autocompletebox" hidden={!showMentionBox}>
           {filteredPlayers.map((p, idx) => (
