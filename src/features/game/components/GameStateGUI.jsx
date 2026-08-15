@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function GameStateGUI({ roomRef }) {
   const [roomScore, setRoomScore] = useState({ red: 0, blue: 0 });
@@ -8,6 +8,7 @@ export default function GameStateGUI({ roomRef }) {
   const [m2, setM2] = useState("0");
   const [s1, setS1] = useState("0");
   const [s2, setS2] = useState("0");
+  const timerView = useRef(null);
 
   useEffect(() => {
     // We poll gameState to avoid binding re-renders to the 60fps renderer
@@ -28,10 +29,14 @@ export default function GameStateGUI({ roomRef }) {
       const s = elapsedGameTime % 60, m = (elapsedGameTime / 60) | 0;
       if (elapsedGameTime < totalGameTime && elapsedGameTime > totalGameTime - 30) {
         if (!oldGUIValues.timeWarningActive) {
-          setTimeWarn(true); oldGUIValues.timeWarningActive = true;
+          //setTimeWarn(true); oldGUIValues.timeWarningActive = true;
+          timerView.current.classList.add("time-warn");
+          oldGUIValues.timeWarningActive = true;
         }
       } else if (oldGUIValues.timeWarningActive) {
-        setTimeWarn(false); oldGUIValues.timeWarningActive = false;
+        //setTimeWarn(false); oldGUIValues.timeWarningActive = false;
+        timerView.current.classList.remove("time-warn");
+        oldGUIValues.timeWarningActive = false;
       }
       if (totalGameTime !== 0 && elapsedGameTime > totalGameTime) {
         if (!oldGUIValues.overtimeActive) { setOvertime(true); oldGUIValues.overtimeActive = true; }
@@ -61,7 +66,7 @@ export default function GameStateGUI({ roomRef }) {
         <div className="teamicon blue" />
       </div>
       <div className="fps-limit-fix" />
-      <div className={`game-timer-view ${timeWarn ? 'time-warn' : ''}`}>
+      <div ref={timerView} className={`game-timer-view`}>
         <span className={`overtime ${overtime ? 'on' : ''}`}>OVERTIME!</span>
         <span className="digit">{m1}</span>
         <span className="digit">{m2}</span>
