@@ -14,8 +14,8 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && nw . --user-data-dir=.nw-local-data development\"",
-    "preview": "cross-env vite build && cross-env nw ./ production",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && node scripts/run-nw.js development\"",
+    "preview": "cross-env vite build && cross-env node scripts/run-nw.js production",
     "dist:win": "vite build && nwbuild --platform=win --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/win --managedManifest=true \"./dist/**/* ./updater/* ./main.js ./package.json\"",
     "dist:linux": "vite build && nwbuild --platform=linux --mode=build --flavor=normal --cacheDir=../nw-cache --outDir=../node-haxball-client-out/linux --managedManifest=true \"./dist/**/* ./updater/* ./main.js ./package.json\"",
     "dist:all": "npm run dist:win && npm run dist:linux",
