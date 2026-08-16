@@ -1,17 +1,9 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
+import { findpath } from "nw";
 
 const projectRoot = path.resolve(process.cwd());
-const nwEntryPoint = fileURLToPath(import.meta.resolve("nw"));
-const nwRuntime = path.resolve(path.dirname(nwEntryPoint), "..", "nwjs");
-const executables = {
-  win32: path.join(nwRuntime, "nw.exe"),
-  linux: path.join(nwRuntime, "nw"),
-  darwin: path.join(nwRuntime, "nwjs.app", "Contents", "MacOS", "nwjs"),
-};
-
 const mode = process.argv[2];
 
 if (mode !== "development" && mode !== "production") {
@@ -19,12 +11,7 @@ if (mode !== "development" && mode !== "production") {
   process.exit(1);
 }
 
-const nwExecutable = executables[process.platform];
-
-if (!nwExecutable) {
-  console.error(`Unsupported platform: ${process.platform}`);
-  process.exit(1);
-}
+const nwExecutable = await findpath();
 
 const nwArgs = [];
 
