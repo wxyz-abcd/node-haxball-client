@@ -2339,20 +2339,37 @@ th {
 
 .game-timer-view>.digit {
     width: 15px;
-    text-align: center
+    text-align: center;
+    position: relative;
 }
 
-.game-timer-view.time-warn {
-    animation: .3s infinite alternate linear time-warn
+.game-timer-view>.null {
+    position: relative;
 }
 
-@keyframes time-warn {
+.game-timer-view>.digit::after,
+.game-timer-view>.null::after {
+    content: attr(data-value);
+    position: absolute;
+    inset: 0;
+    color: #ff8080;
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+}
+
+.game-timer-view.time-warn>.digit::after,
+.game-timer-view.time-warn>.null::after {
+    animation: .3s infinite alternate linear time-warn-opacity
+}
+
+@keyframes time-warn-opacity {
     from {
-        color: var(--text-primary)
+        opacity: 0
     }
 
     to {
-        color: #ff8080
+        opacity: 1
     }
 }
 

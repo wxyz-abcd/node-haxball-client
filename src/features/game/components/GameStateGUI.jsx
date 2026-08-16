@@ -68,11 +68,11 @@ export default function GameStateGUI({ roomRef }) {
       <div className="fps-limit-fix" />
       <div ref={timerView} className={`game-timer-view`}>
         <span className={`overtime ${overtime ? 'on' : ''}`}>OVERTIME!</span>
-        <span className="digit">{m1}</span>
-        <span className="digit">{m2}</span>
-        <span className="null">:</span>
-        <span className="digit">{s1}</span>
-        <span className="digit">{s2}</span>
+        <span className="digit" data-value={m1}>{m1}</span>
+        <span className="digit" data-value={m2}>{m2}</span>
+        <span className="null" data-value=":">:</span>
+        <span className="digit" data-value={s1}>{s1}</span>
+        <span className="digit" data-value={s2}>{s2}</span>
       </div>
     </div>
   );
