@@ -1521,6 +1521,7 @@ export default function(API, params){
     framesInFlight = 0;
     renderBlockedByGPU = false;
     forceImmediateRender = false;
+    messagePending = false;
     rendererLifecycleToken++;
   }
 
@@ -1625,8 +1626,16 @@ export default function(API, params){
   var messageChannel = new MessageChannel();
   var isLoopRunning = false;
   var targetFrameTime = 0;
+  var messagePending = false;
+
+  function _postToLoop() {
+    if (messagePending) return;
+    messagePending = true;
+    messageChannel.port2.postMessage(null);
+  }
 
   messageChannel.port1.onmessage = async function() {
+    messagePending = false;
     if (!isLoopRunning) return;
     if (customLoopId != null) {
       clearTimeout(customLoopId);
@@ -1644,11 +1653,11 @@ export default function(API, params){
         if (remaining > 5) {
           // If more than 5ms remaining, use a passive sleep to save CPU
           customLoopId = setTimeout(() => {
-            if (isLoopRunning) messageChannel.port2.postMessage(null);
+            if (isLoopRunning) _postToLoop();
           }, remaining - 2); // Wait until almost the right time
         } else {
           // SPIN MODE: Check in every possible tick for sub-ms precision
-          messageChannel.port2.postMessage(null);
+          _postToLoop();
         }
         return;
       }
@@ -1669,13 +1678,13 @@ export default function(API, params){
       return;
 
     // Continue the loop
-    messageChannel.port2.postMessage(null);
+    _postToLoop();
   };
 
   function _scheduleNextTick() {
     if (!isLoopRunning) return;
     targetFrameTime = performance.now();
-    messageChannel.port2.postMessage(null);
+    _postToLoop();
   }
 
   function _customRenderTick() {
@@ -1690,7 +1699,7 @@ export default function(API, params){
       clearTimeout(customLoopId);
       customLoopId = null;
     }
-    messageChannel.port2.postMessage(null);
+    _postToLoop();
   }
 
   function _startCustomLoop() {
