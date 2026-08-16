@@ -995,9 +995,9 @@ export default function(API, params){
     thisRenderer.drawBackground && initBackground();
     thisRenderer.showVertices && physicsState.vertices.forEach(initVertex);
     physicsState.segments.forEach(initSegment);
-    initHalo();
     stage2.addChild(nameContainer);
     stage2.addChild(playerContainer);
+    initHalo();
     physicsState.discs.forEach(initDisc);
     physicsState.joints.forEach(initJoint);
     initPauseRect();
