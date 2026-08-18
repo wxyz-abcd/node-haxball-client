@@ -6,6 +6,7 @@ import SettingsPopup from "../../components/SettingsPopup.jsx";
 import Popup from "../../components/Popup.jsx";
 import InputDialog from "../../components/InputDialog.jsx";
 import { usePlayerData } from "../../hooks/usePlayerData.jsx";
+import AccountsPopup from "../accounts/AccountsPopup.jsx";
 
 const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
   const flagClass = "flagico " + "f-" + room.data.flag;
@@ -34,7 +35,7 @@ const RoomListItem = memo(({ room, isSelected, onClick, onDoubleClick }) => {
 });
 
 function RoomList() {
-  const { player, setPlayerField } = usePlayerData();
+  const { player, setPlayerField, activeAccount, switchAccount } = usePlayerData();
   const [rooms, setRooms] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef(null);
@@ -154,6 +155,15 @@ function RoomList() {
     setPopupProps({});
     setPopupComponent(()=>SettingsPopup);
   }, []);
+  const handleAccountSettings = useCallback((accountId) => {
+    switchAccount(accountId);
+    setPopupProps({});
+    setPopupComponent(() => SettingsPopup);
+  }, [switchAccount]);
+  const handleAccounts = useCallback(() => {
+    setPopupProps({ onConfigure: handleAccountSettings });
+    setPopupComponent(() => AccountsPopup);
+  }, [handleAccountSettings]);
   const refresh = useCallback(() => {
     setRooms([]);
     if (player.geo) {
@@ -226,6 +236,7 @@ function RoomList() {
           <div className="dialog">
             <div>
               <h1>Room list</h1>
+              <p className="room-list-account">Account: {activeAccount?.name}</p>
               <div className="room-search">
                 <input
                   type="text"
@@ -341,6 +352,10 @@ function RoomList() {
                 <button onClick={handleSettings} data-hook="settings">
                   <i className="icon-cog"></i>
                   <div>Settings</div>
+                </button>
+                <button onClick={handleAccounts} data-hook="accounts">
+                  <i className="icon-user"></i>
+                  <div>Accounts</div>
                 </button>
                 <button onClick={goToNameForm} data-hook="changenick">
                   <i className="icon-cw"></i>

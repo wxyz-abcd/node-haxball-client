@@ -217,4 +217,13 @@
   content: '🔉';
 }
 
+.icon-user:before {
+  content: '';
+  width: .9em;
+  height: .9em;
+  background:
+    radial-gradient(circle at 50% 24%, currentColor 0 20%, transparent 22%),
+    radial-gradient(ellipse at 50% 105%, currentColor 0 43%, transparent 45%);
+}
+
 /* '\1f509' */

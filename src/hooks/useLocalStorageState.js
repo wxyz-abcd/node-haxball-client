@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-function mergeDefaults(obj, defaults) {
+export function mergeDefaults(obj, defaults) {
   if (typeof defaults !== "object" || defaults === null) {
     return obj ?? defaults;
   }

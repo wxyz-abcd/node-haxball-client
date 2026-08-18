@@ -1,5 +1,16 @@
-import { ThemeProvider } from './ThemeContext.jsx';
+import { useEffect } from 'react';
+import { ThemeProvider, useTheme } from './ThemeContext.jsx';
 import { usePlayerData } from '../hooks/usePlayerData.jsx';
+
+function ThemeAccountSync({ themeId, children }) {
+  const { switchTheme } = useTheme();
+
+  useEffect(() => {
+    switchTheme(themeId || 'classic');
+  }, [switchTheme, themeId]);
+
+  return children;
+}
 
 /**
  * Bridge component that reads the saved theme ID from player data
@@ -10,7 +21,9 @@ export default function ThemeInitializer({ children }) {
   const { player } = usePlayerData();
   return (
     <ThemeProvider initialThemeId={player?.theme || 'classic'}>
-      {children}
+      <ThemeAccountSync themeId={player?.theme}>
+        {children}
+      </ThemeAccountSync>
     </ThemeProvider>
   );
 }

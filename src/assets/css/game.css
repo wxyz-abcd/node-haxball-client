@@ -3626,3 +3626,126 @@ a:hover {
 .hide-cursor * {
     cursor: none !important;
 }
+
+.room-list-account {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: -14px;
+    margin-bottom: 12px
+}
+
+.accounts-view {
+    width: min(560px, calc(100vw - 30px));
+    max-height: min(620px, calc(100vh - 30px))
+}
+
+.accounts-view__hint {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.4
+}
+
+.accounts-view__list {
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0
+}
+
+.accounts-view__item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--separator-color);
+    border-radius: 6px;
+    background: var(--bg-secondary)
+}
+
+.accounts-view__item.active {
+    border-color: var(--border-accent);
+    background: var(--bg-selected)
+}
+
+.accounts-view__details {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px
+}
+
+.accounts-view__details strong,
+.accounts-view__details span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+}
+
+.accounts-view__details span {
+    color: var(--text-secondary);
+    font-size: 11px
+}
+
+.accounts-view__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px
+}
+
+.accounts-view__actions button {
+    padding: 4px 8px
+}
+
+.accounts-view__current {
+    color: var(--text-notice)
+}
+
+.accounts-view form,
+.accounts-view form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px
+}
+
+.accounts-view form {
+    gap: 10px
+}
+
+.accounts-view textarea {
+    min-height: 84px;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid var(--bg-secondary);
+    border-radius: 5px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: monospace;
+    font-size: 11px
+}
+
+.accounts-view textarea:focus {
+    border-color: var(--border-input-focus)
+}
+
+.accounts-view__error {
+    color: var(--btn-danger)
+}
+
+@media (max-width: 560px) {
+    .accounts-view__item {
+        align-items: stretch;
+        flex-direction: column
+    }
+
+    .accounts-view__actions {
+        justify-content: stretch
+    }
+
+    .accounts-view__actions button {
+        flex: 1
+    }
+}
