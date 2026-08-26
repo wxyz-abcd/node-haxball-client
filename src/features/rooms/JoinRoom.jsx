@@ -17,7 +17,7 @@ export default function JoinRoom() {
   const [disconnectedMessage, setDisconnectedMessage] = useState(null);
   const [popup, setPopup] = useState(null);
   const cancelRef = useRef(null);
-  const { roomRef, loading, connInfo, joinRoom } = useRoomJoin();
+  const { roomRef, initialChatRowsRef, loading, connInfo, joinRoom } = useRoomJoin();
 
   const closePopup = useCallback(() => {
     setPopup(null);
@@ -125,7 +125,7 @@ export default function JoinRoom() {
   // Use early returns (same pattern as original) so only one view shows at a time
   if (loading && connInfo) return (<>{popupModal}<ConnectingState cancel={cancel} connInfo={connInfo} /></>);
   if (disconnectedMessage) return (<>{popupModal}<ErrorConnection message={disconnectedMessage} /></>);
-  if (joined) return <>{popupModal}<Game roomRef={roomRef} /></>;
+  if (joined) return <>{popupModal}<Game roomRef={roomRef} initialChatRowsRef={initialChatRowsRef} /></>;
 
   // Still loading but no connInfo yet, or password popup is showing
   return popupModal;
