@@ -49,7 +49,7 @@ function Sound(volume) {
   };
 }
 
-export default function Game({ roomRef, usingCustomAPI }) {
+export default function Game({ roomRef, usingCustomAPI, initialChatRowsRef }) {
   const API = useMemo(()=>(usingCustomAPI || window.API), [usingCustomAPI]);
   const { player, setPlayerField } = usePlayerData();
   const [roomName, setRoomName] = useState(null);
@@ -383,6 +383,19 @@ export default function Game({ roomRef, usingCustomAPI }) {
     setTeamsLocked(room.state?.teamsLocked ?? true);
     setIsAdmin(room.currentPlayer.isAdmin);
     if (!room.gameState) setShowRoomView(true);
+    chatApi.receiveNotice("Controls:");
+    chatApi.receiveNotice("Move: WASD or Arrows");
+    chatApi.receiveNotice("Kick: X, Space, Ctrl");
+    chatApi.receiveNotice("View: Numbers 1 to 7");
+    chatApi.receiveNotice(`Extrapolation set to ${player.extrapolation ?? 0} msec`);
+    const initialChatRows = initialChatRowsRef?.current?.splice(0) || [];
+    initialChatRows.forEach((row) => {
+      if (row.type === "chat") {
+        chatApi.receiveChatMessage(row.playerName, row.message);
+      } else if (row.type === "announcement") {
+        chatApi.receiveAnnouncement(row.message, row.color, row.style);
+      }
+    });
     const s = new Sound(player.sound.gain);
     soundInstanceRef.current = s;
     soundRef.current = s;
@@ -448,30 +461,48 @@ export default function Game({ roomRef, usingCustomAPI }) {
     if (!room) return;
     const s = soundRef.current;
 
-    room.onAfterStadiumChange = (stadium) => setStadiumName(stadium.name);
+    const withActor = (message, byId) => {
+      const byPlayer = room.getPlayer(byId);
+      return byPlayer ? `${message} by ${byPlayer.name}` : message;
+    };
+
+    const receivePlayerTeamNotice = (id, teamId, byId) => {
+      const moved = room.getPlayer(id);
+      const team = API.Impl.Core.Team.byId[teamId];
+      const playerName = moved?.name || `Player ${id}`;
+      const teamName = team?.name || `team ${teamId}`;
+      chatApi.receiveNotice(withActor(`${playerName} was moved to ${teamName}`, byId));
+    };
+
+    room.onAfterStadiumChange = (stadium, byId) => {
+      setStadiumName(stadium.name);
+      chatApi.receiveNotice(withActor(`Stadium changed to "${stadium.name}"`, byId));
+    };
     room.onAfterTeamGoal = () => {
       if (player.sound.main) s.playSound(s.goal);
     };
     room.onAfterPlayerAdminChange = (id, admin, byId) => {
       setPlayers([...room.players]);
       const playerChanged = room.getPlayer(id);
-      const byPlayer = room.getPlayer(byId);
       if (id == room.currentPlayerId)
         setIsAdmin(admin);
-      if (admin)
-        chatApi.receiveNotice(`${playerChanged.name} was given admin rights by ${byPlayer.name}`);
-      else 
-        chatApi.receiveNotice(`${playerChanged.name} admin rights were taken away by ${byPlayer.name}`);
+      const playerName = playerChanged?.name || `Player ${id}`;
+      if (admin) {
+        chatApi.receiveNotice(withActor(`${playerName} was given admin rights`, byId));
+      } else {
+        chatApi.receiveNotice(withActor(`${playerName}'s admin rights were taken away`, byId));
+      }
     };
     room.onAfterPlayerTeamChange = (id, teamId, byId) => {
       setPlayers([...room.players]);
-      const moved = room.getPlayer(id);
-      const playerObj = room.getPlayer(byId);
-      const team = API.Impl.Core.Team.byId[teamId];
-      if (playerObj)
-        chatApi.receiveNotice(
-          `${moved.name} was moved to ${team.name} by ${playerObj.name}`
-        );
+      receivePlayerTeamNotice(id, teamId, byId);
+    };
+    room.onAfterAutoTeams = (playerId1, teamId1, playerId2, teamId2, byId) => {
+      setPlayers([...room.players]);
+      receivePlayerTeamNotice(playerId1, teamId1, byId);
+      if (playerId2 != null && teamId2 != null) {
+        receivePlayerTeamNotice(playerId2, teamId2, byId);
+      }
     };
     room.onAfterPlayerChat = (id, message) => {
       const playerObj = room.state.players.find((x) => x.id == id);
@@ -498,21 +529,22 @@ export default function Game({ roomRef, usingCustomAPI }) {
         chatApi.receiveNotice(`${playerObj.name} has left`);
       }
     };
-    room.onAfterTeamsLockChange = (value) => setTeamsLocked(value);
+    room.onAfterTeamsLockChange = (value, byId) => {
+      setTeamsLocked(value);
+      chatApi.receiveNotice(withActor(`Teams were ${value ? "locked" : "unlocked"}`, byId));
+    };
+    room.onAfterGamePauseChange = (isPaused, byId) => {
+      chatApi.receiveNotice(withActor(`Game ${isPaused ? "paused" : "resumed"}`, byId));
+    };
     room.onAfterGameStop = (byId) => {
       setShowRoomView(true);
       setGameStarted(false);
-      const playerObj = room.getPlayer(byId);
-      if (playerObj)
-        chatApi.receiveNotice(`Game stopped by ${playerObj.name}`)
+      chatApi.receiveNotice(withActor("Game stopped", byId));
     };
     room.onAfterGameStart = (byId) => {
       setShowRoomView(false);
       setGameStarted(true);
-      const playerObj = room.getPlayer(byId);
-      if (playerObj)
-        chatApi.receiveNotice(`Game started by ${playerObj.name}`)
-      else chatApi.receiveNotice(`Game started`)
+      chatApi.receiveNotice(withActor("Game started", byId));
     };
     room.onAfterAnnouncement = (msg, color, style, _sound) => {
       chatApi.receiveAnnouncement(msg, color, style);
@@ -522,17 +554,25 @@ export default function Game({ roomRef, usingCustomAPI }) {
     room.onAfterPlayerBallKick = () => {
       if (player.sound.main) s.playSound(s.kick);
     };
-    room.onAfterScoreLimitChange = (value) => setScoreLimit(value);
-    room.onAfterTimeLimitChange = (value) => setTimeLimit(value);
+    room.onAfterScoreLimitChange = (value, byId) => {
+      setScoreLimit(value);
+      chatApi.receiveNotice(withActor(`Score limit set to ${value}`, byId));
+    };
+    room.onAfterTimeLimitChange = (value, byId) => {
+      setTimeLimit(value);
+      chatApi.receiveNotice(withActor(`Time limit set to ${value}`, byId));
+    };
     return () => {
       room.onAfterStadiumChange = null;
       room.onAfterTeamGoal = null;
       room.onAfterPlayerAdminChange = null;
       room.onAfterPlayerTeamChange = null;
+      room.onAfterAutoTeams = null;
       room.onAfterPlayerChat = null;
       room.onAfterPlayerJoin = null;
       room.onAfterPlayerLeave = null;
       room.onAfterTeamsLockChange = null;
+      room.onAfterGamePauseChange = null;
       room.onAfterGameStop = null;
       room.onAfterGameStart = null;
       room.onAfterAnnouncement = null;

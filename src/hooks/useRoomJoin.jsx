@@ -11,6 +11,7 @@ const ConnectionStateMessages = {
 
 export default function useRoomJoin() {
   const roomRef = useRef(null);
+  const initialChatRowsRef = useRef([]);
   const cancelRef = useRef(null);
   const attemptIdRef = useRef(0);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,7 @@ export default function useRoomJoin() {
     setLoading(true);
     setConnInfo('');
     roomRef.current = null;
+    initialChatRowsRef.current = [];
     const attemptId = attemptIdRef.current;
     let authObj = null;
     let authKey = null;
@@ -82,6 +84,19 @@ export default function useRoomJoin() {
         preInit: (room) => {
           if (attemptIdRef.current !== attemptId) return;
           roomRef.current = room;
+          const pushInitialRow = (row) => {
+            const rows = initialChatRowsRef.current;
+            rows.push(row);
+            if (rows.length > 200) rows.shift();
+          };
+          room.onAfterPlayerChat = (id, message) => {
+            const playerObj = room.getPlayer(id);
+            if (!playerObj) return;
+            pushInitialRow({ type: "chat", playerName: playerObj.name, message });
+          };
+          room.onAfterAnnouncement = (message, color, style, sound) => {
+            pushInitialRow({ type: "announcement", message, color, style, sound });
+          };
         },
         onClose: (reason) => {
           if (attemptIdRef.current !== attemptId) return;
@@ -126,5 +141,5 @@ export default function useRoomJoin() {
     };
   }, []);
 
-  return { roomRef, loading, connInfo, joinRoom };
+  return { roomRef, initialChatRowsRef, loading, connInfo, joinRoom };
 }
