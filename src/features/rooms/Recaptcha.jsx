@@ -96,9 +96,13 @@ export default function Recaptcha({ onSuccess, roomData }) {
   return (
       <iframe style={{visibility: 'hidden', width: '100%', height: '100%'}} ref={ifRef} src="https://www.haxball.com/headlesstoken" /*nwdisable nwfaketop*/ onLoad={()=>{
         try{
-          const response = ifRef.current.contentDocument.querySelector(".g-recaptcha-response");
+          const doc = ifRef.current.contentDocument;
+          const win = ifRef.current.contentWindow;
+
+          const response = doc.querySelector('input[name="cf-turnstile-response"]');
+          const form = doc.querySelector("form");
+
           if (roomData) {
-            const form = ifRef.current.contentDocument.querySelector("form");
             form.action = "https://www.haxball.com/rs/api/client";
             response.name = "rcr";
             let input = form.querySelector('input[name="room"]');
@@ -110,28 +114,45 @@ export default function Recaptcha({ onSuccess, roomData }) {
               form.appendChild(input);
             }
             input.value = roomData.roomId;
-
-            form.appendChild(input);
           }
-          ifRef.current.contentDocument.body.style.margin = 0;
-          ifRef.current.contentDocument.body.children[1].children[1].remove() // <br/>
-          const submitButton = ifRef.current.contentDocument.body.children[1].children[1];
-          submitButton.style.visibility = "hidden"; // submit button
-          ifRef.current.contentDocument.body.children[0].remove(); // <h1/>
-          ifRef.current.contentDocument.body.children[0].style.position = 'relative'; // <form/>
-          ifRef.current.contentDocument.body.children[0].style.height = '100%';
-          ifRef.current.contentDocument.documentElement.style.overflow = 'hidden';
-          const gRecaptcha = ifRef.current.contentDocument.querySelector('.g-recaptcha');
-          gRecaptcha.style.position = 'absolute';
-          gRecaptcha.style.left = '50%';
-          gRecaptcha.style.top = '50%';
-          gRecaptcha.style.transform = 'translate(-50%, -50%)';
+
+          doc.body.style.margin = 0;
+          doc.documentElement.style.overflow = 'hidden';
+
+          const br = form.querySelector("br");
+          if (br) br.remove();
+
+          const submitButton = doc.getElementById("submit");
+          submitButton.style.visibility = "hidden";
+
+          const h1 = doc.querySelector("h1");
+          if (h1) h1.remove();
+
+          form.style.position = 'relative';
+          form.style.height = '100%';
+
+          const turnstileWidget = doc.querySelector('.cf-turnstile');
+          /*turnstileWidget.style.position = 'absolute';
+          turnstileWidget.style.left = '50%';
+          turnstileWidget.style.top = '50%';
+          turnstileWidget.style.transform = 'translate(-50%, -50%)';*/
+
           ifRef.current.style.overflow = 'hidden';
           ifRef.current.style.visibility = "visible";
-          cbRef.current = ifRef.current.contentDocument.getElementsByClassName("g-recaptcha")[0].getElementsByTagName("iframe")[0].contentDocument.getElementsByClassName("recaptcha-checkbox")[0];
+
+          const originalOnSuccess = win.onSuccess;
+          win.onSuccess = (token) => {
+            if (typeof originalOnSuccess === "function") {
+              try { originalOnSuccess(token); } catch (e) {}
+            }
+            setTimeout(() => {
+              submitButton.click();
+            }, 100);
+          };
+
           var int;
           int = setInterval(()=>{
-            if (cbRef.current.classList.contains("recaptcha-checkbox-checked")){
+            if (response && response.value && response.value.length > 0){
               clearInterval(int);
               setTimeout(()=>{
                 submitButton.click();

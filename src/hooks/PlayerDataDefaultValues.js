@@ -32,6 +32,7 @@ export default {
       showChatIndicators: true,
       showFPS: true,
       showInputLag: true,
+      showNetGraph: true,
       targetFPS: 80,
       displayMode: 'windowed',
       resolution: 'native',

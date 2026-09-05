@@ -130,6 +130,13 @@ export default function(API, params){
   });
 
   this.defineVariable({
+    name: "showNetGraph",
+    description: "Show network stats (ping/jitter/packet loss) graph?",
+    type: VariableType.Boolean,
+    value: true
+  });
+
+  this.defineVariable({
     name: "drawBackground",
     description: "Draw Background?", 
     type: VariableType.Boolean,
@@ -283,7 +290,7 @@ export default function(API, params){
     ]
   };
 
-  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, playerContainer = null, nameContainer = null, haloContainer = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false, framesInFlight = 0, rendererLifecycleToken = 0, renderBlockedByGPU = false, forceImmediateRender = false;
+  var scriptElem = null, rendererObj = null, stage = null, stage2 = null, stage3 = null, playerContainer = null, nameContainer = null, haloContainer = null, texture1 = null, texture2 = null, texture3 = null, texture4 = null, customDiscInfo = [], customJointInfo = [], customSegmentInfo = [], customHaloInfo = null, textInfo = {time: 0,queue: []}, locationIndicatorInfo = {}, chatIndicatorInfo = {}, pauseRect = null, fpsText = null, fpsFrameCount = 0, fpsLastSecond = 0, fpsDisplay = 0, inputLagText = null, lastProcessedInputTime = 0, inputLagRollingSum = 0, inputLagRollingCount = 0, netGraphGfx = null, netPingText = null, netLossText = null, netHistory = [], netMedianPing = 0, netMaxPingValue = 0, lastRenderTime = null, spf = null, scale = thisRenderer.zoomCoeff, origin = {x: 0, y: 0}, gamePaused = false, framesInFlight = 0, rendererLifecycleToken = 0, renderBlockedByGPU = false, forceImmediateRender = false;
   var maxFramesInFlight = 2;
   var avatarImage = null;
 
@@ -991,6 +998,46 @@ export default function(API, params){
       inputLagText.y = -params.canvas.height/2 + 40;
       inputLagText.visible = thisRenderer.showInputLag;
       stage.addChild(inputLagText);
+
+      var netGraphVisible = thisRenderer.showNetGraph && !thisRenderer.room?.isHost;
+
+      netPingText = new Text({
+        text: "Ping: -- ms",
+        style: {
+          fontFamily: ["sans-serif"],
+          fontSize: 16,
+          fill: "#00FFFF",
+          fontWeight: "bold",
+          stroke: { color: 0x000000, width: 3 }
+        }
+      });
+      netPingText.x = -params.canvas.width/2 + 20;
+      netPingText.y =- params.canvas.height/2 + 60;
+      netPingText.visible = netGraphVisible;
+      stage.addChild(netPingText);
+
+      netGraphGfx = new Graphics();
+      netGraphGfx.x = -params.canvas.width/2 + 20;
+      netGraphGfx.y = -params.canvas.height/2 + 80;
+      netGraphGfx.visible = netGraphVisible;
+      stage.addChild(netGraphGfx);
+
+      netLossText = new Text({
+        text: "Packet Loss: 0%",
+        style: {
+          fontFamily: ["sans-serif"],
+          fontSize: 14,
+          fill: "#ff5555",
+          fontWeight: "bold",
+          stroke: { color: 0x000000, width: 3 }
+        }
+      });
+      netLossText.x = -params.canvas.width/2 + 20;
+      netLossText.y = -params.canvas.height/2 + 124;
+      netLossText.visible = false;
+      stage.addChild(netLossText);
+
+      refreshNetHud();
     }
     thisRenderer.drawBackground && initBackground();
     thisRenderer.showVertices && physicsState.vertices.forEach(initVertex);
@@ -1393,6 +1440,18 @@ export default function(API, params){
         inputLagText.x = -logicalWidth / 2 + 20;
         inputLagText.y = -logicalHeight / 2 + 40;
       }
+      if (netPingText) {
+        netPingText.x = -logicalWidth / 2 + 20;
+        netPingText.y = -logicalHeight / 2 + 60;
+      }
+      if (netGraphGfx) {
+        netGraphGfx.x = -logicalWidth / 2 + 20;
+        netGraphGfx.y = -logicalHeight / 2 + 80;
+      }
+      if (netLossText) {
+        netLossText.x = -logicalWidth / 2 + 20;
+        netLossText.y = -logicalHeight / 2 + 124;
+      }
 
       // If it is the first frame of the change, mark to re-orient the next frame as well (double-sync)
       if (changed && !needsRecenter) {
@@ -1415,12 +1474,76 @@ export default function(API, params){
     customHaloInfo.gr.visible = false;
   };
 
+  var NET_GRAPH_SAMPLES = 30;
+  var NET_GRAPH_WIDTH = 120;
+  var NET_GRAPH_HEIGHT = 40;
+  var NET_GRAPH_MAX_MS = 250;
+
+  function pingColor(ms){
+    return ms < 60 ? "#33ff33" : (ms < 120 ? "#ffff33" : "#ff3333");
+  }
+
+  function renderNetGraphBars(){
+    if (!netGraphGfx) return;
+    netGraphGfx.clear();
+    netGraphGfx.rect(0, 0, NET_GRAPH_WIDTH, NET_GRAPH_HEIGHT);
+    netGraphGfx.fill({ color: 0x000000, alpha: 0.35 });
+
+    var barWidth = NET_GRAPH_WIDTH / NET_GRAPH_SAMPLES;
+    var startIndex = Math.max(0, netHistory.length - NET_GRAPH_SAMPLES);
+    for (var i = startIndex; i < netHistory.length; i++){
+      var sample = netHistory[i];
+      var slot = i - startIndex;
+      var x = slot * barWidth;
+      var barHeight, color;
+      if (sample < 0){
+        barHeight = NET_GRAPH_HEIGHT;
+        color = 0xff2222;
+      } else {
+        var clamped = Math.min(sample, NET_GRAPH_MAX_MS);
+        barHeight = Math.max(1, (clamped / NET_GRAPH_MAX_MS) * NET_GRAPH_HEIGHT);
+        color = sample < 60 ? 0x33ff33 : (sample < 120 ? 0xffff33 : 0xff3333);
+      }
+      netGraphGfx.rect(x, NET_GRAPH_HEIGHT - barHeight, Math.max(1, barWidth), barHeight);
+      netGraphGfx.fill({ color });
+    }
+  }
+
+  function refreshNetHud(){
+    if (netPingText){
+      if (netHistory.length === 0){
+        netPingText.text = "Ping: -- ms";
+        netPingText.style.fill = "#00FFFF";
+      } else {
+        netPingText.text = "Ping: " + (((10*netMedianPing)|0)/10) + "ms  (max " + (((10*netMaxPingValue)|0)/10) + ")";
+        netPingText.style.fill = pingColor(netMedianPing);
+      }
+    }
+    if (netLossText){
+      var lossCount = 0;
+      for (var i = 0; i < netHistory.length; i++) if (netHistory[i] < 0) lossCount++;
+      var lossPct = netHistory.length ? Math.round(100 * lossCount / netHistory.length) : 0;
+      netLossText.text = "Packet Loss: " + lossPct + "%";
+      netLossText.style.fill = lossPct === 0 ? "#8ed2ab" : (lossPct < 10 ? "#ffff33" : "#ff5555");
+    }
+    renderNetGraphBars();
+  }
+
+  function handleNetPingChange(raw, median, max){
+    netMedianPing = median;
+    netMaxPingValue = max;
+    netHistory.push(raw);
+    if (netHistory.length > NET_GRAPH_SAMPLES) netHistory.shift();
+    refreshNetHud();
+  }
+
   this.initialize = function(){
   var bottomEl = document.getElementsByClassName("chatbox-view")[0];
   this.resizeObserver = new ResizeObserver(function(entries){
     thisRenderer.bottomPaddingPx = entries[0].contentRect.height;
   });
   this.resizeObserver.observe(bottomEl);
+  if (thisRenderer.room) thisRenderer.room.onPingChange = handleNetPingChange;
     function loadScript(src, onload){
       var e = document.createElement("script");
       e.onload = onload;
@@ -1478,6 +1601,13 @@ export default function(API, params){
   };
 
   this.finalize = function(){
+    if (thisRenderer.room && thisRenderer.room.onPingChange === handleNetPingChange) thisRenderer.room.onPingChange = null;
+    netGraphGfx = null;
+    netPingText = null;
+    netLossText = null;
+    netHistory = [];
+    netMedianPing = 0;
+    netMaxPingValue = 0;
     stage?.destroy(true);
     stage2?.destroy(true);
     stage3?.destroy(true);
@@ -1809,6 +1939,13 @@ export default function(API, params){
       case "showInputLag":
         if (inputLagText) inputLagText.visible = newValue;
         break;
+      case "showNetGraph":{
+        var netGraphVisible = newValue && !thisRenderer.room?.isHost;
+        if (netPingText) netPingText.visible = netGraphVisible;
+        if (netGraphGfx) netGraphGfx.visible = netGraphVisible;
+        if (netLossText) netLossText.visible = false;
+        break;
+      }
       case "resolutionScale":
         if (rendererObj) {
             rendererObj.resolution = window.devicePixelRatio * newValue;
@@ -1934,7 +2071,7 @@ export default function(API, params){
   // snapshot support
 
   this.takeSnapshot = function(){
-    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth, displayMode, resolution } = thisRenderer;
+    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, showNetGraph, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth, displayMode, resolution } = thisRenderer;
     return {
       webGPU, 
       extrapolation, 
@@ -1946,6 +2083,7 @@ export default function(API, params){
       resolutionScale, 
       showChatIndicators, 
       showFPS, 
+      showNetGraph,
       restrictCameraOrigin, 
       followMode, 
       followPlayerId, 
@@ -1974,7 +2112,7 @@ export default function(API, params){
   };
 
   this.useSnapshot = function(snapshot){
-    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth, displayMode, resolution } = snapshot;
+    var { webGPU, extrapolation, zoomCoeff, wheelZoomCoeff, showTeamColors, showAvatars, showPlayerIds, resolutionScale, followPlayerId, restrictCameraOrigin, followMode, showChatIndicators, showFPS, showNetGraph, drawBackground, squarePlayers, currentPlayerDistinction, showInvisibleSegments, showVertices, generalLineWidth, discLineWidth, displayMode, resolution } = snapshot;
     Object.assign(thisRenderer, {
       webGPU, 
       extrapolation, 
@@ -1986,6 +2124,7 @@ export default function(API, params){
       resolutionScale, 
       showChatIndicators, 
       showFPS, 
+      showNetGraph,
       restrictCameraOrigin, 
       followMode, 
       followPlayerId, 

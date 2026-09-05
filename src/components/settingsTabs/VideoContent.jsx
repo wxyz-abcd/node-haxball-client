@@ -252,6 +252,12 @@ export default function VideoContent({ player, setPlayerField, roomRef }) {
         onChange={(value) => rendererChanged("showInputLag", value)}
       />
       <Toggle
+        title={"Show Network Graph (ping/packet loss)"}
+        value={playerCopy.renderer.showNetGraph ?? playerDefaultValues.renderer.showNetGraph}
+        defaultValue={playerDefaultValues.renderer.showNetGraph}
+        onChange={(value) => rendererChanged("showNetGraph", value)}
+      />
+      <Toggle
         title={"Always hide on mouse move"}
         value={playerCopy.chat.alwaysHide ?? playerDefaultValues.chat.alwaysHide}
         defaultValue={playerDefaultValues.chat.alwaysHide}

@@ -407,7 +407,7 @@ export default function Game({ roomRef, usingCustomAPI }) {
           return;
         }
         setRendererObj(defaultRendererObj);
-        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "showInputLag", "targetFPS", "displayMode", "resolution", "playerAvatarTexturePath"]
+        const rendererOptions = ["webGPU", "discLineWidth", "generalLineWidth", "resolutionScale", "showTeamColors", "showAvatars", "showChatIndicators", "showFPS", "showInputLag", "showNetGraph", "targetFPS", "displayMode", "resolution", "playerAvatarTexturePath"]
         for (let i = 0; i < rendererOptions.length; i++) {
             defaultRendererObj[rendererOptions[i]] = player.renderer[rendererOptions[i]];
         }
