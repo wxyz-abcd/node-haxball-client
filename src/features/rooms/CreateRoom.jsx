@@ -11,11 +11,12 @@ export default function CreateRoom() {
   const [password, setPassword] = useState("");
   const [maxPl, setMaxPl] = useState(10);
   const [showInRoomList, setShowInRoomList] = useState(true);
+  const [token, setToken] = useState("");
 
   const { roomRef, loading, error, createRoom } = useRoomCreate();
   const [roomCreated, setRoomCreated] = useState(false);
   const [popup, setPopup] = useState(null);
-  const handleCreate = async (token) => {
+  const handleCreate = async () => {
     const geo = player.geo || await window.API.Utils.getGeo();
     setPlayerField('geo', geo);
     await createRoom({
@@ -27,6 +28,15 @@ export default function CreateRoom() {
       token  // we must show basro's token recaptcha somehow
     });
     setRoomCreated(true);
+  };
+
+  const openExternal = (url) => (e) => {
+    e.preventDefault();
+    if (window.nw) {
+      nw.Shell.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   if (loading) return <div>connecting</div>
@@ -58,13 +68,18 @@ export default function CreateRoom() {
           </select>
         </div>
 
+        <div className="label-input">
+          <label>Token: <a href="https://www.haxball.com/headlesstoken" onClick={openExternal('https://www.haxball.com/headlesstoken')}>get</a></label>
+          <input value={token} onChange={(e) => setToken(e.target.value)} />
+        </div>
+
         <button onClick={() => setShowInRoomList(p => !p)}>
           Show in room list: {showInRoomList ? "Yes" : "No"}
         </button>
 
         <div className="row">
           <button onClick={() => window.history.back()}>Cancel</button>
-          <button onClick={() => setPopup({component: Recaptcha, props: {onSuccess:(token)=>handleCreate(token)}})}>Create</button>
+          <button onClick={() => handleCreate()}>Create</button>
         </div>
       </div>
     </div>
