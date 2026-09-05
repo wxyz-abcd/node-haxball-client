@@ -18,6 +18,7 @@
   --bg-header: #000;
   --bg-restricted: #2e343c;
   --bg-player-hover: #1b2328;
+  --bg-game-bar: #1b2328;
 
   /* ── Buttons ── */
   --btn-primary: #244967;
@@ -84,6 +85,7 @@
   /* ── Game ── */
   --game-popup-overlay: rgba(115, 136, 92, .5);
   --overlay-dark: rgba(0, 0, 0, .7);
+  --theme-blur: 0px;
 }
 
 html,
@@ -637,6 +639,7 @@ th {
 .dialog,
 .room-view>.container {
     background-color: var(--bg-primary);
+    backdrop-filter: blur(var(--theme-blur, 0px));
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2403,7 +2406,7 @@ th {
     height: 35px;
     display: flex;
     justify-content: center;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-game-bar);
     padding: 5px;
     border-radius: 0 0 5px 5px;
     font: 900 20px "Arial Black", "Arial Bold", Gadget, sans-serif
@@ -3040,7 +3043,6 @@ th {
     width: calc(100% - 12px);
     margin-right: 15px;
     flex: 0;
-    background-color: var(--bg-primary)
 }
 
 .roomlist-view>.dialog>.splitter>.list .content,

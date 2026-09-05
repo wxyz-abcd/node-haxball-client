@@ -448,6 +448,13 @@ export default function Game({ roomRef, usingCustomAPI }) {
     if (!room) return;
     const s = soundRef.current;
 
+    room.onAfterGamePauseChange = (paused, byId) => {
+      const author = room.getPlayer(byId)?.name;
+
+      chatApi.receiveNotice(
+        `Game ${paused ? "paused" : "resumed"}${author ? ` by ${author}` : ""}`
+      );
+    };
     room.onAfterStadiumChange = (stadium) => setStadiumName(stadium.name);
     room.onAfterTeamGoal = () => {
       if (player.sound.main) s.playSound(s.goal);

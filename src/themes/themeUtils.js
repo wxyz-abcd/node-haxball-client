@@ -21,28 +21,78 @@ export function rgbToHex(r, g, b) {
   }).join('');
 }
 
+export function parseColor(value) {
+  if (!value || typeof value !== 'string') return null;
+  const v = value.trim();
+
+  const rgbaMatch = v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i);
+  if (rgbaMatch) {
+    return {
+      r: Math.min(255, parseInt(rgbaMatch[1], 10)),
+      g: Math.min(255, parseInt(rgbaMatch[2], 10)),
+      b: Math.min(255, parseInt(rgbaMatch[3], 10)),
+      a: rgbaMatch[4] !== undefined ? Math.max(0, Math.min(1, parseFloat(rgbaMatch[4]))) : 1,
+    };
+  }
+
+  const hexMatch = v.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/);
+  if (hexMatch) {
+    let hex = hexMatch[1];
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    const a = hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1;
+    return { r, g, b, a };
+  }
+
+  return null;
+}
+
+export function toRgbaString(r, g, b, a = 1) {
+  const alpha = Math.round(Math.max(0, Math.min(1, a)) * 1000) / 1000;
+  const rr = Math.max(0, Math.min(255, Math.round(r)));
+  const gg = Math.max(0, Math.min(255, Math.round(g)));
+  const bb = Math.max(0, Math.min(255, Math.round(b)));
+  return `rgba(${rr}, ${gg}, ${bb}, ${alpha})`;
+}
+
+export function composeColor(hex, alpha = 1) {
+  const c = parseColor(hex);
+  if (!c) return hex;
+  if (alpha >= 1) return rgbToHex(c.r, c.g, c.b);
+  return toRgbaString(c.r, c.g, c.b, alpha);
+}
+
 /** Lighten a hex color by a percentage (0–100). Used for hover states. */
-export function lighten(hex, percent = 15) {
-  const [r, g, b] = hexToRgb(hex);
+export function lighten(value, percent = 15) {
+  const c = parseColor(value);
+  if (!c) return value;
   const amt = percent / 100;
-  return rgbToHex(
-    r + (255 - r) * amt,
-    g + (255 - g) * amt,
-    b + (255 - b) * amt
-  );
+  const r = c.r + (255 - c.r) * amt;
+  const g = c.g + (255 - c.g) * amt;
+  const b = c.b + (255 - c.b) * amt;
+  return c.a < 1 ? toRgbaString(r, g, b, c.a) : rgbToHex(r, g, b);
 }
 
 /** Darken a hex color by a percentage (0–100). Used for active states. */
-export function darken(hex, percent = 15) {
-  const [r, g, b] = hexToRgb(hex);
+export function darken(value, percent = 15) {
+  const c = parseColor(value);
+  if (!c) return value;
   const amt = 1 - percent / 100;
-  return rgbToHex(r * amt, g * amt, b * amt);
+  const r = c.r * amt;
+  const g = c.g * amt;
+  const b = c.b * amt;
+  return c.a < 1 ? toRgbaString(r, g, b, c.a) : rgbToHex(r, g, b);
 }
 
 /** Convert hex to "r, g, b" string for use in rgba() */
-export function hexToRgbString(hex) {
-  const [r, g, b] = hexToRgb(hex);
-  return `${r}, ${g}, ${b}`;
+export function hexToRgbString(value) {
+  const c = parseColor(value);
+  if (!c) return '0, 0, 0';
+  return `${c.r}, ${c.g}, ${c.b}`;
 }
 
 /**
@@ -165,6 +215,13 @@ export const VARIABLE_GROUPS = [
     label: 'Game',
     vars: [
       { key: '--game-popup-overlay', label: 'Game popup overlay' },
+      { key: '--bg-game-bar', label: 'Game scoreboard bar' }
+    ]
+  },
+  {
+    label: 'Effects',
+    vars: [
+      { key: '--theme-blur', label: 'Background blur', type: 'range', min: 0, max: 20, step: 1, unit: 'px' },
     ]
   },
 ];

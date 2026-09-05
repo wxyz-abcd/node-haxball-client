@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useImperativeHandle } from 'react'
 
 const MIN_CHAT_HEIGHT = 33;
 const MAX_CHAT_HEIGHT = 400;
+const IME_COMMIT_GRACE_MS = 50;
 
 export default React.memo(function ChatBox({
   ref,
@@ -36,6 +37,35 @@ export default React.memo(function ChatBox({
   const [mentionTrigger, setMentionTrigger] = useState("@");
   const mentionAtPosRef = useRef(-1);
   const mentionItemRefs = useRef([]);
+  const isComposing = useRef(false);
+  const lastCompositionEndAt = useRef(-Infinity);
+
+  useEffect(() => {
+    const input = chatInputRef.current;
+    if (!input) return;
+
+    const handleCompositionStart = () => {
+      isComposing.current = true;
+      input._imeBusy = true;
+    };
+
+    const handleCompositionEnd = () => {
+      isComposing.current = false;
+      lastCompositionEndAt.current = performance.now();
+      input._imeBusy = false;
+      input._imeCommitAt = lastCompositionEndAt.current;
+    };
+
+    input.addEventListener("compositionstart", handleCompositionStart);
+    input.addEventListener("compositionend", handleCompositionEnd);
+
+    return () => {
+      input.removeEventListener("compositionstart", handleCompositionStart);
+      input.removeEventListener("compositionend", handleCompositionEnd);
+      delete input._imeBusy;
+      delete input._imeCommitAt;
+    };
+  }, [chatInputRef]);
 
   useEffect(() => {
     chatRef.current = chat;
@@ -175,6 +205,17 @@ export default React.memo(function ChatBox({
   };
 
   const inputKeyDown = (e) => {
+    if (
+      e.key === "Process" ||
+      e.nativeEvent?.keyCode === 229 ||
+      e.nativeEvent?.isComposing === true ||
+      isComposing.current ||
+      ((e.code === "Enter" || e.code === "NumpadEnter") &&
+        performance.now() - lastCompositionEndAt.current < IME_COMMIT_GRACE_MS)
+    ) {
+      return;
+    }
+
     if (mentionOpen) {
       const filteredPlayers = getFilteredPlayers();
 

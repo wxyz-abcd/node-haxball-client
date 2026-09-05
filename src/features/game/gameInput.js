@@ -82,6 +82,13 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
 
     let gameKeysHandler = new GameKeysHandler(keys, room, chatInput);
 
+    const isImeBusy = () => {
+        if (!chatInput) return false;
+        if (chatInput._imeBusy) return true;
+        const lastCommit = chatInput._imeCommitAt;
+        return typeof lastCommit === "number" && performance.now() - lastCommit < 50;
+    };
+
     const handleKeyDown = (e) => {
         if (e.repeat) return;
         room._lastInputTime = performance.now();
@@ -94,11 +101,13 @@ export default function setGameInputs(room, roomView, chatApi, keys, canvas, cha
             case 'Tab':
             case 'Enter':
             case 'NumpadEnter':
+                if (document.activeElement === chatInput && isImeBusy()) break;
                 chatApi.focusOnChat();
                 e.preventDefault();
                 break;
             case 'Escape':
                 if (document.activeElement !== chatInput) roomView();
+                else if (isImeBusy()) break;
                 canvas.focus();
                 break;
             case "Digit1":

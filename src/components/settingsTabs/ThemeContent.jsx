@@ -1,7 +1,67 @@
 import { useState, useCallback, useRef } from 'react';
 import { useTheme } from '../../themes/ThemeContext.jsx';
-import { VARIABLE_GROUPS, DERIVED_VAR_CONFIG, expandThemeVariables } from '../../themes/themeUtils.js';
+import {
+  VARIABLE_GROUPS,
+  DERIVED_VAR_CONFIG,
+  expandThemeVariables,
+  parseColor,
+  composeColor,
+} from '../../themes/themeUtils.js';
 import { usePlayerData } from '../../hooks/usePlayerData.jsx';
+
+function ColorAlphaControl({ value, onChange }) {
+  const parsed = parseColor(value) || { r: 0, g: 0, b: 0, a: 1 };
+  const hex6 = '#' + [parsed.r, parsed.g, parsed.b].map(c => {
+    const h = Math.max(0, Math.min(255, c)).toString(16);
+    return h.length === 1 ? '0' + h : h;
+  }).join('');
+  const alphaPct = Math.round(parsed.a * 100);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace', minWidth: 90, textAlign: 'right' }}>
+        {value}
+      </span>
+      <input
+        type="color"
+        value={hex6}
+        onChange={e => onChange(composeColor(e.target.value, parsed.a))}
+        style={{ width: 28, height: 22, border: 'none', padding: 0, background: 'none', cursor: 'pointer' }}
+      />
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={alphaPct}
+        title={`Opacity: ${alphaPct}%`}
+        onChange={e => onChange(composeColor(hex6, Number(e.target.value) / 100))}
+        style={{ width: 60, cursor: 'pointer' }}
+      />
+      <span style={{ fontSize: 10, opacity: 0.55, minWidth: 28 }}>{alphaPct}%</span>
+    </div>
+  );
+}
+
+function RangeControl({ value, min, max, step, unit, onChange }) {
+  const numeric = parseFloat(value) || 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={numeric}
+        onChange={e => onChange(`${e.target.value}${unit}`)}
+        style={{ width: 90, cursor: 'pointer' }}
+      />
+      <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace', minWidth: 32 }}>
+        {numeric}{unit}
+      </span>
+    </div>
+  );
+}
 
 function computeInitialCustomDerived(vars) {
   const set = new Set();
@@ -242,7 +302,8 @@ export default function ThemeContent() {
               </div>
               {group.vars.map(v => {
                 const currentVal = editVars[v.key] || '';
-                const isColor = /^#[0-9a-fA-F]{3,8}$/.test(currentVal);
+                const isRange = v.type === 'range';
+                const isColor = !isRange && !!parseColor(currentVal);
                 const derivedList = DERIVED_VAR_CONFIG[v.key];
                 const isCustomizing = derivedList && derivedList.every(d => customDerived.has(d.key));
                 return (
@@ -255,26 +316,20 @@ export default function ThemeContent() {
                       borderRadius: 3,
                     }}>
                       <span style={{ fontSize: 13, flex: 1 }}>{v.label}</span>
-                      {isColor ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace' }}>{currentVal}</span>
-                          <input
-                            type="color"
-                            value={currentVal.length === 4 ?
-                              '#' + currentVal[1] + currentVal[1] + currentVal[2] + currentVal[2] + currentVal[3] + currentVal[3] :
-                              currentVal
-                            }
-                            onChange={e => handleColorChange(v.key, e.target.value)}
-                            style={{
-                              width: 28,
-                              height: 22,
-                              border: 'none',
-                              padding: 0,
-                              background: 'none',
-                              cursor: 'pointer',
-                            }}
-                          />
-                        </div>
+                      {isRange ? (
+                        <RangeControl
+                          value={currentVal || `0${v.unit}`}
+                          min={v.min}
+                          max={v.max}
+                          step={v.step}
+                          unit={v.unit}
+                          onChange={val => handleColorChange(v.key, val)}
+                        />
+                      ) : isColor ? (
+                        <ColorAlphaControl
+                          value={currentVal}
+                          onChange={val => handleColorChange(v.key, val)}
+                        />
                       ) : (
                         <input
                           type="text"
@@ -309,7 +364,7 @@ export default function ThemeContent() {
                         {isCustomizing && (
                           <div style={{ marginTop: 3, marginLeft: 2 }}>
                             {derivedList.map(d => {
-                              const dVal = editVars[d.key] || '';
+                              const dVal = editVars[d.key] || '#000000';
                               return (
                                 <div key={d.key} style={{
                                   display: 'flex',
@@ -318,25 +373,10 @@ export default function ThemeContent() {
                                   marginBottom: 3,
                                 }}>
                                   <span style={{ fontSize: 12, opacity: 0.75 }}>{d.label}</span>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'monospace' }}>{dVal}</span>
-                                    <input
-                                      type="color"
-                                      value={dVal.length === 4 ?
-                                        '#' + dVal[1] + dVal[1] + dVal[2] + dVal[2] + dVal[3] + dVal[3] :
-                                        (dVal || '#000000')
-                                      }
-                                      onChange={e => handleColorChange(d.key, e.target.value)}
-                                      style={{
-                                        width: 28,
-                                        height: 22,
-                                        border: 'none',
-                                        padding: 0,
-                                        background: 'none',
-                                        cursor: 'pointer',
-                                      }}
-                                    />
-                                  </div>
+                                  <ColorAlphaControl
+                                    value={dVal}
+                                    onChange={val => handleColorChange(d.key, val)}
+                                  />
                                 </div>
                               );
                             })}

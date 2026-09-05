@@ -69,6 +69,8 @@ export const BUILTIN_THEMES = {
       '--timebar-marker': '#cecece',
       '--game-popup-overlay': 'rgba(115, 136, 92, .5)',
       '--overlay-dark': 'rgba(0, 0, 0, .7)',
+      '--theme-blur': '0px',
+      '--bg-game-bar': '#1a2125'
     }
   },
 
@@ -135,6 +137,8 @@ export const BUILTIN_THEMES = {
       '--timebar-marker': '#8888aa',
       '--game-popup-overlay': 'rgba(40, 30, 80, .5)',
       '--overlay-dark': 'rgba(0, 0, 0, .75)',
+      '--theme-blur': '0px',
+      '--bg-game-bar': '#141427'
     }
   },
 
@@ -201,6 +205,8 @@ export const BUILTIN_THEMES = {
       '--timebar-marker': '#88aa98',
       '--game-popup-overlay': 'rgba(30, 80, 50, .5)',
       '--overlay-dark': 'rgba(0, 0, 0, .75)',
+      '--theme-blur': '0px',
+      '--bg-game-bar': '#172420'
     }
   }
 };
